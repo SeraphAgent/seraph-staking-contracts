@@ -10,12 +10,11 @@ out/
 # Docs
 docs/
 
-# Dotenv file
-.env
-
 # Node modules
 node_modules/
 
+# Dotenv file
+.env
+
 # No need to have it in the repo
 commands.txt
-

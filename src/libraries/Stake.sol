@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 library Stake {
-    error InvalidLockMonths(uint256 lockMonths);
+    // error InvalidLockMonths(uint256 lockMonths);
 
     struct Staker {
         uint256 staked;
@@ -19,17 +19,20 @@ library Stake {
     uint256 internal constant MAX_WEIGHT = 200; // 200%
 
     function stakerLockedWeight(uint256 lockMonths) internal pure returns (uint256) {
-        if (lockMonths < MIN_LOCK_MONTHS || lockMonths > MAX_LOCK_MONTHS) {
-            revert InvalidLockMonths(lockMonths);
-        }
+        // if (lockMonths < MIN_LOCK_MONTHS || lockMonths > MAX_LOCK_MONTHS) {
+        //     revert InvalidLockMonths(lockMonths);
+        // }
         //check steps division precision
-        return MIN_WEIGHT + (lockMonths - 1) * (MAX_WEIGHT - MIN_WEIGHT) / (MAX_LOCK_MONTHS - MIN_LOCK_MONTHS);
+        uint256 stakeWeight =
+            MIN_WEIGHT + (lockMonths - 1) * (MAX_WEIGHT - MIN_WEIGHT) / (MAX_LOCK_MONTHS - MIN_LOCK_MONTHS);
+        assert(stakeWeight > 0);
+        return stakeWeight;
     }
 
     function getDistribution(Staker memory staker) internal view returns (uint256) {
-        if (staker.lockMonths < MIN_LOCK_MONTHS || staker.lockMonths > MAX_LOCK_MONTHS) {
-            revert InvalidLockMonths(staker.lockMonths);
-        }
+        // if (staker.lockMonths < MIN_LOCK_MONTHS || staker.lockMonths > MAX_LOCK_MONTHS) {
+        //     revert InvalidLockMonths(staker.lockMonths);
+        // }
         uint256 weightMultiplier = stakerLockedWeight(staker.lockMonths);
         uint256 currentTime = block.timestamp;
         // need to restake or getting 0?

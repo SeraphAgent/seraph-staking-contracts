@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 library Stake {
     error InvalidLockMonths(uint256 lockMonths);
 

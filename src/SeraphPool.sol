@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-// This is considered an Exogenous, Decentralized, Anchored (pegged), Crypto Collateralized low volitility coin
-
 // Layout of Contract:
 // version
 // imports
@@ -26,6 +24,14 @@
 pragma solidity ^0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Stake } from "./libraries/Stake.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import { Stake } from "./libraries/Stake.sol";
+
+contract SeraphPool is Ownable, ReentrancyGuard {
+    using SafeCast for *;
+    using Stake for Stake.Staker;
+
+    constructor() Ownable(msg.sender) { }
+}

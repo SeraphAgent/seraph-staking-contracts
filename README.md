@@ -1,66 +1,31 @@
-## Foundry
+# Staking Design Overview
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## Goals
 
-Foundry consists of:
+1. **Simple**
+2. **Immutable**
+3. **Flexible**
+4. **Modular**
+5. **Quick and Secure**
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Plan
 
-## Documentation
+### Next Steps
 
-https://book.getfoundry.sh/
+1. **Cleanup & Proper Implementation**
+   - did not yet implement extra fns and just ideated direction
+2. **`delegateCall` Integration**
+   - Decide between:
+     - Deployment scripting for configurations
+       - Ok with stateless
+     - Direct deployment.
+3. **Factory vs Base vs Flexible Duplication**
+4. **Testing Suite**
+   - Fuzz testing
+   - Invariant testing
+5. **Prep for Audit**
+6. **All Intermediate Tasks**
 
-## Usage
+---
 
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+ChatGPT said: This keeps it concise, clear, and structured. Let me know if further tweaks are needed!

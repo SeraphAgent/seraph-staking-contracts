@@ -24,6 +24,7 @@
    - Fuzz testing
    - Invariant testing
 5. **Prep for Audit**
+   - Proper docs and natspec
 6. **All Intermediate Tasks**
 
 ---

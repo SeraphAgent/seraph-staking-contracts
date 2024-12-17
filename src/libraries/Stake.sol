@@ -13,6 +13,13 @@ library Stake {
         uint256 lockMonths; // 1 to 12
     }
 
+    ///FIGURE OUT TIME
+    struct Batch {
+        uint256 timestamp;
+        uint256 totalStaked;
+        uint256 totalRewards;
+    }
+
     uint256 internal constant MIN_LOCK_MONTHS = 1;
     uint256 internal constant MAX_LOCK_MONTHS = 12;
     uint256 internal constant MIN_WEIGHT = 100; // 100%

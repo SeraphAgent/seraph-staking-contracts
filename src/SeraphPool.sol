@@ -21,6 +21,13 @@
 // private
 // view & pure functions
 
+// TODO: timestamp for batch
+// TODO: fallback and recieve
+// TODO: recoverALL to stakers
+// TODO: recoverALL to owner
+// TODO: batchClaims based on time
+// TODO; depositERC20 + add batch time
+
 pragma solidity ^0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -36,7 +43,9 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     using SafeCast for *;
     using Stake for Stake.Staker;
 
-    constructor() Ownable(msg.sender) { }
+    constructor(address _seraphToken, address _rewardToken) Ownable(msg.sender) {
+        seraphToken = _seraphToken;
+    }
 
     struct User {
         uint256 pendingRewards;
@@ -49,6 +58,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     }
 
     mapping(address => User) public users;
+    mapping(address => bool) public rewardTokenAllowed;
 
     address public seraphToken;
     uint256 public poolTokenReserve;
@@ -118,6 +128,28 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     //     _sync();
     // }
 
+    function depositERC20(address _token, uint256 _value) external virtual onlyOwner {
+        _requireNotPaused();
+        require(rewardTokenAllowed, "Not allowed token");
+
+        IERC20(_token).transferFrom(msg.sender, address(this), _value);
+    }
+
+    ///FIGURE OUT TIME
+    function pendingRewards(address _staker) external view virtual returns (uint256 pendingRewards) {
+        User storage user = users[_staker];
+        uint256 stakesLength = users[_staker].stakes.length;
+        uint256 cumulativeDistribution;
+
+        if (stakesLength > 0) {
+            // loops through stakes and calculates pending rewards
+            for (uint256 i = 0; i < stakesLength; i++) {
+                uint256 pendingDistribution = Stake.getDistribution(user.stakes[i], batchTime);
+                cumulativeDistribution += pendingDistribution;
+            }
+        }
+    }
+
     function claimVaultRewards() external virtual {
         // checks if the contract is in a paused state
         _requireNotPaused();
@@ -141,57 +173,10 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     //     Stake.Staker storage staker = user.stakes[_stakeId];
 
     //     for (uint256 i = 0; i < _stakes.length; i++) {
-    //         // destructure calldata parameters
-    //         (uint256 _stakeId, uint256 _value) = (_stakes[i].stakeId, _stakes[i].value);
-    //         Stake.Data storage userStake = user.stakes[_stakeId];
-    //         // checks if stake is unlocked already
-    //         fnSelector.verifyState(_now256() > userStake.lockedUntil, i * 3);
-    //         // checks if unstaking value is valid
-    //         fnSelector.verifyNonZeroInput(_value, 1);
-    //         // stake structure may get deleted, so we save isYield flag to be able to use it
-    //         // we also save stakeValue for gas savings
-    //         (uint120 stakeValue, bool isYield) = (userStake.value, userStake.isYield);
-    //         // verifies if the selected stake is yield (i.e ILV to be minted)
-    //         // or not, the function needs to either mint yield or transfer tokens
-    //         // and can't do both operations at the same time.
-    //         fnSelector.verifyState(isYield == _unstakingYield, i * 3 + 1);
-    //         // checks if there's enough tokens to unstake
-    //         fnSelector.verifyState(stakeValue >= _value, i * 3 + 2);
-
-    //         // store stake weight
-    //         uint256 previousWeight = userStake.weight();
-    //         // value used to save new weight after updates in storage
-    //         uint256 newWeight;
-
-    //         // update the stake, or delete it if its depleted
-    //         if (stakeValue - _value == 0) {
-    //             // deletes stake struct, no need to save new weight because it stays 0
-    //             delete user.stakes[_stakeId];
-    //         } else {
-    //             // removes _value from the stake with safe cast
-    //             userStake.value -= (_value).toUint120();
-    //             // saves new weight to memory
-    //             newWeight = userStake.weight();
-    //         }
-
-    //         // updates the values initialized earlier with the amounts that
-    //         // need to be subtracted (weight) and transferred (value to unstake)
-    //         weightToRemove += previousWeight - newWeight;
-    //         valueToUnstake += _value;
-    //     }
-
-    //     IERC20(seraphToken).transfer(msg.sender, staker.getDistribution(staker));
-    //     poolTokenReserve -= staker.getDistribution(staker);
-    //poolTokenReserve -= valueToUnstake;
-    //IERC20Upgradeable(poolToken).safeTransfer(msg.sender, valueToUnstake);
+    //
     // }
 
-    // // emits an event
-    // emit LogUnstakeLockedMultiple(msg.sender, valueToUnstake, _unstakingYield);
-    //     emit LogUnstakeLocked(msg.sender, _stakeId, staker.getDistribution(staker));
-    // }
-
-    function _claimVaultRewards(address _staker) internal virtual {
+    function _claimVaultRewards(address _staker, address _rewardToken) internal virtual {
         User storage user = users[_staker];
         uint256 pendingDistribution = uint256(user.pendingRewards);
         // if pending yield is zero - just return silently
@@ -199,9 +184,13 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         // clears user pending revenue distribution
         user.pendingRewards = 0;
 
-        IERC20(seraphToken).transfer(_staker, pendingDistribution);
+        IERC20(_rewardToken).transfer(_staker, pendingDistribution);
 
         // emits an event
         emit LogClaimVaultRewards(msg.sender, _staker, pendingDistribution);
+    }
+
+    function addRewardToken(address _rewardToken) external onlyOwner {
+        rewardTokenAllowed[_rewardToken] = true;
     }
 }

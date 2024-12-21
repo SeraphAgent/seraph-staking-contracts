@@ -24,10 +24,10 @@
 pragma solidity ^0.8.26;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title SeraphPool
@@ -110,11 +110,11 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     ///////Events/////////////////
     //////////////////////////////
 
-    event Staked(address indexed user, uint256 amount, uint256 lockPeriod);
-    event Unstaked(address indexed user, uint256 amount);
-    event RewardClaimed(address indexed user, uint256 reward);
-    event RewardIndexUpdated(uint256 rewardAmount, address tokenAddress);
-    event PausedStateChanged(bool isPaused);
+    event Staked(address indexed _user, uint256 _amount, uint256 _lockPeriod);
+    event Unstaked(address indexed _user, uint256 _amount);
+    event RewardClaimed(address indexed _user, uint256 _reward);
+    event RewardIndexUpdated(uint256 _rewardAmount, address _tokenAddress);
+    event PausedStateChanged(bool _isPaused);
 
     //////////////////////////////
     ///////Constructor///////////
@@ -149,58 +149,58 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @dev Stakes tokens in the pool and sets a lock period.
-     * @param amount The amount of tokens to stake.
-     * @param lockPeriod The lock period in seconds.
+     * @param _amount The amount of tokens to stake.
+     * @param _lockPeriod The lock period in seconds.
      */
-    function stake(uint256 amount, uint256 lockPeriod) external nonReentrant {
+    function stake(uint256 _amount, uint256 _lockPeriod) external {
         _requireNotPaused();
-        if (lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
-        if (lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
+        if (_lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
+        if (_lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
 
         _updateRewards(msg.sender);
 
-        uint256 multiplier = MULTIPLIER + ((MAX_MULTIPLIER - MULTIPLIER) * lockPeriod) / (52 weeks);
+        uint256 multiplier = MULTIPLIER + ((MAX_MULTIPLIER - MULTIPLIER) * _lockPeriod) / (52 weeks);
         lockMultiplier[msg.sender] = multiplier;
-        lockEndTime[msg.sender] = block.timestamp + lockPeriod;
+        lockEndTime[msg.sender] = block.timestamp + _lockPeriod;
 
-        balanceOf[msg.sender] += amount;
-        totalSupply += amount;
+        balanceOf[msg.sender] += _amount;
+        totalSupply += _amount;
 
-        stakingToken.transferFrom(msg.sender, address(this), amount);
-        emit Staked(msg.sender, amount, lockPeriod);
+        stakingToken.transferFrom(msg.sender, address(this), _amount);
+        emit Staked(msg.sender, _amount, _lockPeriod);
     }
 
     /**
      * @dev Unstakes tokens after the lock period has ended.
-     * @param amount The amount of tokens to unstake.
+     * @param _amount The amount of tokens to unstake.
      */
-    function unstake(uint256 amount) external nonReentrant {
+    function unstake(uint256 _amount) external {
         if (block.timestamp < lockEndTime[msg.sender]) revert SeraphPool__LockPeriodNotOver();
 
         _updateRewards(msg.sender);
 
-        balanceOf[msg.sender] -= amount;
-        totalSupply -= amount;
+        balanceOf[msg.sender] -= _amount;
+        totalSupply -= _amount;
 
-        stakingToken.transfer(msg.sender, amount);
-        emit Unstaked(msg.sender, amount);
+        stakingToken.transfer(msg.sender, _amount);
+        emit Unstaked(msg.sender, _amount);
     }
 
     /**
      * @dev Claims earned rewards for the caller.
      * @return The amount of rewards claimed.
      */
-    function claim() external nonReentrant returns (uint256) {
+    function claim() external returns (uint256) {
         _updateRewards(msg.sender);
 
-        uint256 reward = earned[msg.sender];
-        if (reward > 0) {
+        uint256 _reward = earned[msg.sender];
+        if (_reward > 0) {
             earned[msg.sender] = 0;
-            rewardToken.transfer(msg.sender, reward);
-            emit RewardClaimed(msg.sender, reward);
+            rewardToken.transfer(msg.sender, _reward);
+            emit RewardClaimed(msg.sender, _reward);
         }
 
-        return reward;
+        return _reward;
     }
 
     /**
@@ -244,11 +244,11 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @dev Updates the rewards for a given account.
-     * @param account The address of the account to update rewards for.
+     * @param _account The address of the account to update rewards for.
      */
-    function _updateRewards(address account) private {
-        earned[account] += _calculateRewards(account);
-        rewardIndexOf[account] = rewardIndex;
+    function _updateRewards(address _account) private {
+        earned[_account] += _calculateRewards(_account);
+        rewardIndexOf[_account] = rewardIndex;
     }
 
     //////////////////////////////
@@ -257,13 +257,13 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @dev Calculates the rewards for a given account.
-     * @param account The address of the account to calculate rewards for.
+     * @param _account The address of the account to calculate rewards for.
      * @return The calculated reward amount.
      */
-    function _calculateRewards(address account) private view returns (uint256) {
-        uint256 shares = balanceOf[account];
-        uint256 multiplier = lockMultiplier[account];
-        return (shares * (rewardIndex - rewardIndexOf[account]) * multiplier) / (MULTIPLIER * MULTIPLIER);
+    function _calculateRewards(address _account) private view returns (uint256) {
+        uint256 _shares = balanceOf[_account];
+        uint256 _multiplier = lockMultiplier[_account];
+        return (_shares * (rewardIndex - rewardIndexOf[_account]) * _multiplier) / (MULTIPLIER * MULTIPLIER);
     }
 
     //////////////////////////////
@@ -272,10 +272,10 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
     /**
      * @dev Returns the rewards earned by a given account.
-     * @param account The address of the account to check rewards for.
+     * @param _account The address of the account to check rewards for.
      * @return The total rewards earned by the account.
      */
-    function calculateRewardsEarned(address account) external view returns (uint256) {
-        return earned[account] + _calculateRewards(account);
+    function calculateRewardsEarned(address _account) external view returns (uint256) {
+        return earned[_account] + _calculateRewards(_account);
     }
 }

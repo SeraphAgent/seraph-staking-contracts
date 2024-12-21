@@ -44,6 +44,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     error SeraphPool__MinimumLockPeriod();
     error SeraphPool__MaximumLockPeriod();
     error SeraphPool__LockPeriodNotOver();
+    error SeraphPool__StakingCapExceeded();
     error SeraphPool__EtherNotAccepted();
     error SeraphPool__TokensNotAccepted();
 
@@ -106,6 +107,11 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     uint256 public constant MAX_MULTIPLIER = 3 * MULTIPLIER; // Maximum 3x rewards for the longest lock
 
+    /**
+     * @dev Maximum staking cap for the pool.
+     */
+    uint256 public stakingCap;
+
     //////////////////////////////
     ///////Events/////////////////
     //////////////////////////////
@@ -115,6 +121,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     event RewardClaimed(address indexed _user, uint256 _reward);
     event RewardIndexUpdated(uint256 _rewardAmount, address _tokenAddress);
     event PausedStateChanged(bool _isPaused);
+    event StakingCapUpdated(uint256 _newCap);
 
     //////////////////////////////
     ///////Constructor///////////
@@ -124,10 +131,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Initializes the contract with staking and reward tokens.
      * @param _stakingToken Address of the staking token contract.
      * @param _rewardToken Address of the reward token contract.
+     * @param _initialCap Initial staking cap.
      */
-    constructor(address _stakingToken, address _rewardToken) Ownable(msg.sender) {
+    constructor(address _stakingToken, address _rewardToken, uint256 _initialCap) Ownable(msg.sender) {
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
+        stakingCap = _initialCap;
     }
 
     //////////////////////////////
@@ -148,6 +157,15 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
+     * @dev Updates the staking cap.
+     * @param _newCap The new maximum staking cap.
+     */
+    function updateStakingCap(uint256 _newCap) external onlyOwner {
+        stakingCap = _newCap;
+        emit StakingCapUpdated(_newCap);
+    }
+
+    /**
      * @dev Stakes tokens in the pool and sets a lock period.
      * @param _amount The amount of tokens to stake.
      * @param _lockPeriod The lock period in seconds.
@@ -156,6 +174,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         _requireNotPaused();
         if (_lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
         if (_lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
+        if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
 
         _updateRewards(msg.sender);
 

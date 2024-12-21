@@ -42,7 +42,6 @@ library Stake {
         // }
         uint256 weightMultiplier = stakerLockedWeight(staker.lockMonths);
         uint256 currentTime = block.timestamp;
-        // need to restake or getting 0?
         uint256 lockDurationLeft = staker.lockedUntil > currentTime ? staker.lockedUntil - currentTime : 0;
         uint256 totalLockDuration = staker.lockedUntil - staker.lockedFrom;
         // test values

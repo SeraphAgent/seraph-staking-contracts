@@ -13,8 +13,8 @@
 
 // Layout of Functions:
 // constructor
-// receive function (if exists)
-// fallback function (if exists)
+// receive function
+// fallback function
 // external
 // public
 // internal
@@ -35,6 +35,17 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
  */
 contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     using SafeCast for *;
+
+    //////////////////////////////
+    //////Errors//////////////////
+    //////////////////////////////
+
+    error SeraphPool__NoStakedTokens();
+    error SeraphPool__MinimumLockPeriod();
+    error SeraphPool__MaximumLockPeriod();
+    error SeraphPool__LockPeriodNotOver();
+    error SeraphPool__EtherNotAccepted();
+    error SeraphPool__TokensNotAccepted();
 
     //////////////////////////////
     //////State variables////////
@@ -96,6 +107,16 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     uint256 public constant MAX_MULTIPLIER = 3 * MULTIPLIER; // Maximum 3x rewards for the longest lock
 
     //////////////////////////////
+    ///////Events/////////////////
+    //////////////////////////////
+
+    event Staked(address indexed user, uint256 amount, uint256 lockPeriod);
+    event Unstaked(address indexed user, uint256 amount);
+    event RewardClaimed(address indexed user, uint256 reward);
+    event RewardIndexUpdated(uint256 rewardAmount, address tokenAddress);
+    event PausedStateChanged(bool isPaused);
+
+    //////////////////////////////
     ///////Constructor///////////
     //////////////////////////////
 
@@ -120,9 +141,10 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     function updateRewardIndex(uint256 _reward, address _token) external onlyOwner {
         _requireNotPaused();
-        require(totalSupply > 0, "No staked tokens");
+        if (totalSupply == 0) revert SeraphPool__NoStakedTokens();
         IERC20(_token).transferFrom(msg.sender, address(this), _reward);
         rewardIndex += (_reward * MULTIPLIER) / totalSupply;
+        emit RewardIndexUpdated(_reward, _token);
     }
 
     /**
@@ -132,8 +154,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     function stake(uint256 amount, uint256 lockPeriod) external {
         _requireNotPaused();
-        require(lockPeriod >= 1 weeks, "Minimum lock period is 1 week");
-        require(lockPeriod <= 52 weeks, "Maximum lock period is 52 weeks");
+        if (lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
+        if (lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
 
         _updateRewards(msg.sender);
 
@@ -145,6 +167,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         totalSupply += amount;
 
         stakingToken.transferFrom(msg.sender, address(this), amount);
+        emit Staked(msg.sender, amount, lockPeriod);
     }
 
     /**
@@ -152,7 +175,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param amount The amount of tokens to unstake.
      */
     function unstake(uint256 amount) external {
-        require(block.timestamp >= lockEndTime[msg.sender], "Lock period not over");
+        if (block.timestamp < lockEndTime[msg.sender]) revert SeraphPool__LockPeriodNotOver();
 
         _updateRewards(msg.sender);
 
@@ -160,6 +183,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         totalSupply -= amount;
 
         stakingToken.transfer(msg.sender, amount);
+        emit Unstaked(msg.sender, amount);
     }
 
     /**
@@ -173,6 +197,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         if (reward > 0) {
             earned[msg.sender] = 0;
             rewardToken.transfer(msg.sender, reward);
+            emit RewardClaimed(msg.sender, reward);
         }
 
         return reward;
@@ -188,6 +213,29 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         } else {
             super._unpause();
         }
+        emit PausedStateChanged(_shouldPause);
+    }
+
+    //////////////////////////////
+    //////Receive function////////
+    //////////////////////////////
+
+    /**
+     * @dev Prevents accidental Ether transfers to the contract.
+     */
+    receive() external payable {
+        revert SeraphPool__EtherNotAccepted();
+    }
+
+    //////////////////////////////
+    //////Fallback function///////
+    //////////////////////////////
+
+    /**
+     * @dev Prevents accidental token transfers to the contract.
+     */
+    fallback() external payable {
+        revert SeraphPool__TokensNotAccepted();
     }
 
     //////////////////////////////

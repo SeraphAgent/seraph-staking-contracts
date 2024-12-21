@@ -152,7 +152,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param amount The amount of tokens to stake.
      * @param lockPeriod The lock period in seconds.
      */
-    function stake(uint256 amount, uint256 lockPeriod) external {
+    function stake(uint256 amount, uint256 lockPeriod) external nonReentrant {
         _requireNotPaused();
         if (lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
         if (lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
@@ -174,7 +174,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Unstakes tokens after the lock period has ended.
      * @param amount The amount of tokens to unstake.
      */
-    function unstake(uint256 amount) external {
+    function unstake(uint256 amount) external nonReentrant {
         if (block.timestamp < lockEndTime[msg.sender]) revert SeraphPool__LockPeriodNotOver();
 
         _updateRewards(msg.sender);
@@ -190,7 +190,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Claims earned rewards for the caller.
      * @return The amount of rewards claimed.
      */
-    function claim() external returns (uint256) {
+    function claim() external nonReentrant returns (uint256) {
         _updateRewards(msg.sender);
 
         uint256 reward = earned[msg.sender];

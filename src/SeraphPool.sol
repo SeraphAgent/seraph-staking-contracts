@@ -45,8 +45,10 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     error SeraphPool__MaximumLockPeriod();
     error SeraphPool__LockPeriodNotOver();
     error SeraphPool__StakingCapExceeded();
+    error SeraphPool__RewardTokenNotFound();
     error SeraphPool__EtherNotAccepted();
     error SeraphPool__TokensNotAccepted();
+    error SeraphPool__RewardTokenNotAllowed();
 
     //////////////////////////////
     //////State variables////////
@@ -58,9 +60,14 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     IERC20 public immutable stakingToken;
 
     /**
-     * @dev The token used for distributing rewards.
+     * @dev Mapping of reward tokens to their total supplies.
      */
-    IERC20 public immutable rewardToken;
+    mapping(address => uint256) public rewardTotalSupply;
+
+    /**
+     * @dev Mapping of allowed reward tokens.
+     */
+    mapping(address => bool) public allowedRewardTokens;
 
     /**
      * @dev Mapping of user addresses to their staked balances.
@@ -88,19 +95,19 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     uint256 private constant MULTIPLIER = 1e18;
 
     /**
-     * @dev The global reward index for the pool.
+     * @dev The global reward index for each reward token.
      */
-    uint256 private rewardIndex;
+    mapping(address => uint256) private rewardIndex;
 
     /**
-     * @dev Mapping of user addresses to their last known reward index.
+     * @dev Mapping of user addresses and reward tokens to their last known reward index.
      */
-    mapping(address => uint256) private rewardIndexOf;
+    mapping(address => mapping(address => uint256)) private rewardIndexOf;
 
     /**
-     * @dev Mapping of user addresses to their earned rewards.
+     * @dev Mapping of user addresses and reward tokens to their earned rewards.
      */
-    mapping(address => uint256) private earned;
+    mapping(address => mapping(address => uint256)) private earned;
 
     /**
      * @dev The maximum multiplier for long lock periods.
@@ -118,25 +125,47 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
     event Staked(address indexed _user, uint256 _amount, uint256 _lockPeriod);
     event Unstaked(address indexed _user, uint256 _amount);
-    event RewardClaimed(address indexed _user, uint256 _reward);
-    event RewardIndexUpdated(uint256 _rewardAmount, address _tokenAddress);
-    event PausedStateChanged(bool _isPaused);
-    event StakingCapUpdated(uint256 _newCap);
+    event RewardClaimed(address indexed _user, address _rewardToken, uint256 _reward);
+    event RewardIndexUpdated(address indexed _rewardToken, uint256 _rewardAmount);
+    event PausedStateChanged(bool indexed _isPaused);
+    event StakingCapUpdated(uint256 indexed _newCap);
+    event RewardTokenAdded(address indexed _rewardToken);
+    event RewardTokenRemoved(address indexed _rewardToken);
 
     //////////////////////////////
     ///////Constructor///////////
     //////////////////////////////
 
     /**
-     * @dev Initializes the contract with staking and reward tokens.
+     * @dev Initializes the contract with staking token and initial staking cap.
      * @param _stakingToken Address of the staking token contract.
-     * @param _rewardToken Address of the reward token contract.
      * @param _initialCap Initial staking cap.
      */
-    constructor(address _stakingToken, address _rewardToken, uint256 _initialCap) Ownable(msg.sender) {
+    constructor(address _stakingToken, uint256 _initialCap) Ownable(msg.sender) {
         stakingToken = IERC20(_stakingToken);
-        rewardToken = IERC20(_rewardToken);
         stakingCap = _initialCap;
+    }
+
+    //////////////////////////////
+    //////Receive function////////
+    //////////////////////////////
+
+    /**
+     * @dev Prevents accidental Ether transfers to the contract.
+     */
+    receive() external payable {
+        revert SeraphPool__EtherNotAccepted();
+    }
+
+    //////////////////////////////
+    //////Fallback function///////
+    //////////////////////////////
+
+    /**
+     * @dev Prevents accidental token transfers to the contract.
+     */
+    fallback() external payable {
+        revert SeraphPool__TokensNotAccepted();
     }
 
     //////////////////////////////
@@ -144,16 +173,36 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     //////////////////////////////
 
     /**
-     * @dev Updates the reward index by adding new rewards to the pool.
-     * @param _reward The amount of reward tokens to add.
-     * @param _token The address of the reward token.
+     * @dev Updates the reward index by adding new rewards to the pool for a specific token.
+     * @param _rewardToken The address of the reward token.
+     * @param _rewardAmount The amount of reward tokens to add.
      */
-    function updateRewardIndex(uint256 _reward, address _token) external onlyOwner {
+    function updateRewardIndex(address _rewardToken, uint256 _rewardAmount) external {
         _requireNotPaused();
+        if (!allowedRewardTokens[_rewardToken]) revert SeraphPool__RewardTokenNotAllowed();
         if (totalSupply == 0) revert SeraphPool__NoStakedTokens();
-        IERC20(_token).transferFrom(msg.sender, address(this), _reward);
-        rewardIndex += (_reward * MULTIPLIER) / totalSupply;
-        emit RewardIndexUpdated(_reward, _token);
+        rewardTotalSupply[_rewardToken] += _rewardAmount;
+        IERC20(_rewardToken).transferFrom(msg.sender, address(this), _rewardAmount);
+        rewardIndex[_rewardToken] += (_rewardAmount * MULTIPLIER) / totalSupply;
+        emit RewardIndexUpdated(_rewardToken, _rewardAmount);
+    }
+
+    /**
+     * @dev Adds a new reward token to the allowed list.
+     * @param _rewardToken The address of the reward token to allow.
+     */
+    function addRewardToken(address _rewardToken) external onlyOwner {
+        allowedRewardTokens[_rewardToken] = true;
+        emit RewardTokenAdded(_rewardToken);
+    }
+
+    /**
+     * @dev Removes a reward token from the allowed list.
+     * @param _rewardToken The address of the reward token to disallow.
+     */
+    function removeRewardToken(address _rewardToken) external onlyOwner {
+        allowedRewardTokens[_rewardToken] = false;
+        emit RewardTokenRemoved(_rewardToken);
     }
 
     /**
@@ -206,17 +255,20 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @dev Claims earned rewards for the caller.
+     * @dev Claims earned rewards for the caller for a specific reward token.
+     * @param _rewardToken The address of the reward token to claim.
      * @return The amount of rewards claimed.
      */
-    function claim() external returns (uint256) {
+    function claim(address _rewardToken) external returns (uint256) {
+        if (rewardIndex[_rewardToken] == 0) revert SeraphPool__RewardTokenNotFound();
+
         _updateRewards(msg.sender);
 
-        uint256 _reward = earned[msg.sender];
+        uint256 _reward = earned[msg.sender][_rewardToken];
         if (_reward > 0) {
-            earned[msg.sender] = 0;
-            rewardToken.transfer(msg.sender, _reward);
-            emit RewardClaimed(msg.sender, _reward);
+            earned[msg.sender][_rewardToken] = 0;
+            IERC20(_rewardToken).transfer(msg.sender, _reward);
+            emit RewardClaimed(msg.sender, _rewardToken, _reward);
         }
 
         return _reward;
@@ -236,53 +288,33 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     }
 
     //////////////////////////////
-    //////Receive function////////
+    //////Private functions///////
     //////////////////////////////
 
     /**
-     * @dev Prevents accidental Ether transfers to the contract.
+     * @dev Calculates the rewards for a given account and reward token.
+     * @param _account The address of the account to calculate rewards for.
+     * @param _rewardToken The address of the reward token.
+     * @return The calculated reward amount.
      */
-    receive() external payable {
-        revert SeraphPool__EtherNotAccepted();
+    function _calculateRewards(address _account, address _rewardToken) private view returns (uint256) {
+        uint256 _shares = balanceOf[_account];
+        uint256 _multiplier = lockMultiplier[_account];
+        return (_shares * (rewardIndex[_rewardToken] - rewardIndexOf[_account][_rewardToken]) * _multiplier)
+            / (MULTIPLIER * MULTIPLIER);
     }
-
-    //////////////////////////////
-    //////Fallback function///////
-    //////////////////////////////
-
-    /**
-     * @dev Prevents accidental token transfers to the contract.
-     */
-    fallback() external payable {
-        revert SeraphPool__TokensNotAccepted();
-    }
-
-    //////////////////////////////
-    //////Internal functions//////
-    //////////////////////////////
 
     /**
      * @dev Updates the rewards for a given account.
      * @param _account The address of the account to update rewards for.
      */
     function _updateRewards(address _account) private {
-        earned[_account] += _calculateRewards(_account);
-        rewardIndexOf[_account] = rewardIndex;
-    }
-
-    //////////////////////////////
-    //////Private functions///////
-    //////////////////////////////
-
-    /**
-     * @dev Calculates the rewards for a given account.
-     * @param _account The address of the account to calculate rewards for.
-     * @return The calculated reward amount.
-     */
-    function _calculateRewards(address _account) private view returns (uint256) {
-        uint256 _shares = balanceOf[_account];
-        uint256 _multiplier = lockMultiplier[_account];
-        return (_shares * (rewardIndex - rewardIndexOf[_account]) * _multiplier) / (MULTIPLIER * MULTIPLIER);
+        for (address token = address(0); token != address(0); token = address(uint160(uint256(token) + 1))) {
+            if (rewardIndex[token] > 0) {
+                earned[_account][token] += _calculateRewards(_account, token);
+                rewardIndexOf[_account][token] = rewardIndex[token];
+            }
+        }
     }
 
     //////////////////////////////
@@ -290,11 +322,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     //////////////////////////////
 
     /**
-     * @dev Returns the rewards earned by a given account.
+     * @dev Returns the rewards earned by a given account for a specific reward token.
      * @param _account The address of the account to check rewards for.
+     * @param _rewardToken The address of the reward token.
      * @return The total rewards earned by the account.
      */
-    function calculateRewardsEarned(address _account) external view returns (uint256) {
-        return earned[_account] + _calculateRewards(_account);
+    function calculateRewardsEarned(address _account, address _rewardToken) external view returns (uint256) {
+        return earned[_account][_rewardToken] + _calculateRewards(_account, _rewardToken);
     }
 }

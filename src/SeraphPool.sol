@@ -60,14 +60,14 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     IERC20 public immutable stakingToken;
 
     /**
+     * @dev List of allowed reward tokens.
+     */
+    address[] public allowedRewardTokens;
+
+    /**
      * @dev Mapping of reward tokens to their total supplies.
      */
     mapping(address => uint256) public rewardTotalSupply;
-
-    /**
-     * @dev Mapping of allowed reward tokens.
-     */
-    mapping(address => bool) public allowedRewardTokens;
 
     /**
      * @dev Mapping of user addresses to their staked balances.
@@ -177,9 +177,9 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _rewardToken The address of the reward token.
      * @param _rewardAmount The amount of reward tokens to add.
      */
-    function updateRewardIndex(address _rewardToken, uint256 _rewardAmount) external {
+    function updateRewardIndex(address _rewardToken, uint256 _rewardAmount) external onlyOwner {
         _requireNotPaused();
-        if (!allowedRewardTokens[_rewardToken]) revert SeraphPool__RewardTokenNotAllowed();
+        if (!_isRewardTokenAllowed(_rewardToken)) revert SeraphPool__RewardTokenNotAllowed();
         if (totalSupply == 0) revert SeraphPool__NoStakedTokens();
         rewardTotalSupply[_rewardToken] += _rewardAmount;
         IERC20(_rewardToken).transferFrom(msg.sender, address(this), _rewardAmount);
@@ -192,7 +192,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _rewardToken The address of the reward token to allow.
      */
     function addRewardToken(address _rewardToken) external onlyOwner {
-        allowedRewardTokens[_rewardToken] = true;
+        allowedRewardTokens.push(_rewardToken);
         emit RewardTokenAdded(_rewardToken);
     }
 
@@ -201,7 +201,18 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _rewardToken The address of the reward token to disallow.
      */
     function removeRewardToken(address _rewardToken) external onlyOwner {
-        allowedRewardTokens[_rewardToken] = false;
+        uint256 index;
+        bool found = false;
+        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
+            if (allowedRewardTokens[i] == _rewardToken) {
+                index = i;
+                found = true;
+                break;
+            }
+        }
+        if (!found) revert SeraphPool__RewardTokenNotFound();
+        allowedRewardTokens[index] = allowedRewardTokens[allowedRewardTokens.length - 1];
+        allowedRewardTokens.pop();
         emit RewardTokenRemoved(_rewardToken);
     }
 
@@ -292,6 +303,20 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     //////////////////////////////
 
     /**
+     * @dev Checks if a reward token is allowed.
+     * @param _rewardToken The address of the reward token.
+     * @return True if the reward token is allowed, false otherwise.
+     */
+    function _isRewardTokenAllowed(address _rewardToken) private view returns (bool) {
+        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
+            if (allowedRewardTokens[i] == _rewardToken) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * @dev Calculates the rewards for a given account and reward token.
      * @param _account The address of the account to calculate rewards for.
      * @param _rewardToken The address of the reward token.
@@ -309,7 +334,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _account The address of the account to update rewards for.
      */
     function _updateRewards(address _account) private {
-        for (address token = address(0); token != address(0); token = address(uint160(uint256(token) + 1))) {
+        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
+            address token = allowedRewardTokens[i];
             if (rewardIndex[token] > 0) {
                 earned[_account][token] += _calculateRewards(_account, token);
                 rewardIndexOf[_account][token] = rewardIndex[token];

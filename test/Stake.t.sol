@@ -10,8 +10,7 @@ contract SeraphPoolTest is StdCheats, Test {
     SeraphPool pool;
 
     function setUp() public {
-        pool =
-            new SeraphPool(0x4f81837C2f4A189A0B69370027cc2627d93785B4, 0x806041B6473DA60abbe1b256d9A2749A151be6C6, 100);
+        pool = new SeraphPool(0x4f81837C2f4A189A0B69370027cc2627d93785B4, 100);
     }
 
     function testStake() public { }

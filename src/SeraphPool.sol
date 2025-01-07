@@ -178,7 +178,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _amount The amount of tokens to stake.
      * @param _lockPeriod The lock period in seconds.
      */
-    function stake(uint256 _amount, uint256 _lockPeriod) external {
+    function stake(uint256 _amount, uint256 _lockPeriod) external nonReentrant {
         if (_lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
         if (_lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
         if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
@@ -199,7 +199,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Unstakes tokens after the lock period for a specific stake ID.
      * @param _stakeId The ID of the stake to unstake.
      */
-    function unstake(uint256 _stakeId) external {
+    function unstake(uint256 _stakeId) external nonReentrant {
         if (_stakeId >= stakes[msg.sender].length) revert SeraphPool__InvalidStakeId();
         Stake storage userStake = stakes[msg.sender][_stakeId];
         if (block.timestamp < userStake.lockEndTime) revert SeraphPool__LockPeriodNotOver();
@@ -370,5 +370,14 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     function updateStakingCap(uint256 _newCap) external onlyOwner {
         stakingCap = _newCap;
         emit StakingCapUpdated(_newCap);
+    }
+
+    /**
+     * @dev Allows the owner to recover ERC20 tokens mistakenly sent to the contract.
+     * @param _token The address of the ERC20 token to recover.
+     * @param _amount The amount of tokens to recover.
+     */
+    function recoverERC20(address _token, uint256 _amount) external onlyOwner {
+        IERC20(_token).transfer(msg.sender, _amount);
     }
 }

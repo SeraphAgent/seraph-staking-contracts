@@ -401,21 +401,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
                     // Transfer the reward to the user
                     IERC20(rewardToken).transfer(_account, reward);
-                    rewardTotalSupply[rewardToken] -= _rewardAmount;
+                    rewardTotalSupply[rewardToken] -= reward;
 
                     emit RewardClaimed(_account, rewardToken, reward);
                 }
             }
         }
-    }
-
-    /**
-     * @dev Claims rewards for the caller across all reward tokens.
-     * Rewards are calculated based on the user's stakes and the global reward index.
-     * Emits the RewardClaimed event for each reward token.
-     */
-    function claim() external nonReentrant whenNotPaused {
-        _claim(msg.sender);
     }
 
     //////////////////////////////

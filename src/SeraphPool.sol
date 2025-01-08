@@ -245,14 +245,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
             uint256 reward = earned[msg.sender][rewardToken];
 
             if (reward > 0) {
+                uint256 availableBalance = IERC20(rewardToken).balanceOf(address(this)) - totalSupply;
                 // Reset the earned rewards for the token
                 earned[msg.sender][rewardToken] = 0;
 
                 // Stake specific balance check
-                if (
-                    rewardToken == address(stakingToken)
-                        && (IERC20(rewardToken).balanceOf(address(this)) - totalSupply) < reward
-                ) {
+                if (rewardToken == address(stakingToken) && availableBalance < reward) {
                     revert SeraphPool__BalanceMismatch();
                 }
 
@@ -407,17 +405,17 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
             if (reward > 0) {
                 // Ensure sufficient balance exists for distribution or exit silently
                 // Stake specific balance check
-                if (
-                    rewardToken == address(stakingToken)
-                        && (IERC20(rewardToken).balanceOf(address(this)) - totalSupply) >= reward
-                ) {
-                    earned[_account][rewardToken] = 0;
+                if (rewardToken == address(stakingToken)) {
+                    uint256 availableBalance = IERC20(rewardToken).balanceOf(address(this)) - totalSupply;
+                    if (availableBalance >= reward) {
+                        earned[_account][rewardToken] = 0;
 
-                    // Transfer the reward to the user
-                    IERC20(rewardToken).transfer(_account, reward);
-                    rewardTotalSupply[rewardToken] -= reward;
+                        // Transfer the reward to the user
+                        IERC20(rewardToken).transfer(_account, reward);
+                        rewardTotalSupply[rewardToken] -= reward;
 
-                    emit RewardClaimed(_account, rewardToken, reward);
+                        emit RewardClaimed(_account, rewardToken, reward);
+                    }
                 } else if (IERC20(rewardToken).balanceOf(address(this)) >= reward) {
                     earned[_account][rewardToken] = 0;
 
@@ -474,7 +472,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
             uint256 stakeReward = (
                 _stake.amount * (rewardIndex[_rewardToken] - rewardIndexOf[_account][_rewardToken])
                     * _stake.lockMultiplier
-            ) / (MULTIPLIER * MULTIPLIER);
+            ) / MULTIPLIER;
+
             rewards += stakeReward;
         }
 

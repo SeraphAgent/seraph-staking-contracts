@@ -71,15 +71,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     mapping(address => uint256) public rewardTotalSupply;
 
-    // /**
-    //  * @dev Struct for tracking individual stakes.
-    //  */
-    // struct Stake {
-    //     uint256 amount;
-    //     uint256 lockEndTime;
-    //     uint256 lockMultiplier;
-    // }
-
     /**
      * @dev Mapping of user addresses to their balances.
      */
@@ -89,11 +80,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Mapping of user addresses to their cooldown.
      */
     mapping(address => uint256) public lockEndTime;
-
-    // /**
-    //  * @dev Mapping of user addresses to their stakes.
-    //  */
-    // mapping(address => Stake[]) public stakes;
 
     /**
      * @dev The total amount of tokens staked in the pool.
@@ -120,16 +106,10 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     mapping(address => mapping(address => uint256)) private earned;
 
-    // /**
-    //  * @dev The maximum multiplier for long lock periods.
-    //  */
-    // uint256 public constant MAX_MULTIPLIER = 3 * MULTIPLIER; // Maximum 3x rewards for the longest lock
-
-    // /**
-    //  * @dev The lock periods.
-    //  */
+    /**
+     * @dev The lock cooldown.
+     */
     uint256 public minLockPeriod;
-    // uint256 public maxLockPeriod = 52 weeks;
 
     /**
      * @dev Maximum staking cap for the pool.
@@ -196,22 +176,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     function stake(uint256 _amount /*uint256 _lockPeriod*/ ) external nonReentrant whenNotPaused {
         if (_amount == 0) revert SeraphPool__NoStakedTokens();
-        //if (_lockPeriod < minLockPeriod) revert SeraphPool__MinimumLockPeriod();
-        //if (_lockPeriod > maxLockPeriod) revert SeraphPool__MaximumLockPeriod();
         if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
 
         _updateRewards(msg.sender);
 
-        // uint256 lockEndTime = block.timestamp + _lockPeriod;
-        // uint256 multiplier = MULTIPLIER + ((MAX_MULTIPLIER - MULTIPLIER) * _lockPeriod) / (maxLockPeriod);
-        //uint256 multiplier = 0;
-        //uint256 lockEndTime = block.timestamp + minLockPeriod;
-
         balanceOf[msg.sender] += _amount;
         lockEndTime[msg.sender] = block.timestamp + minLockPeriod;
-
-        // // Add the new stake entry
-        // stakes[msg.sender].push(Stake({ amount: _amount, lockEndTime: lockEndTime, lockMultiplier: multiplier }));
 
         totalSupply += _amount;
 
@@ -223,28 +193,13 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Unstakes tokens after the lock period.
      */
     function unstake(uint256 _amount) external nonReentrant {
-        //if (_stakeId >= stakes[msg.sender].length) revert SeraphPool__InvalidStakeId();
-        //Stake storage userStake = stakes[msg.sender][_stakeId];
         if (block.timestamp < lockEndTime[msg.sender]) revert SeraphPool__LockPeriodNotOver();
         if (balanceOf[msg.sender] < _amount) revert SeraphPool__NoStakedTokens();
 
         _updateRewards(msg.sender);
 
-        //uint256 amount = userStake.amount;
-
-        // // Silent claim rewards before unstaking
-        // _claim(msg.sender);
-
         // Clear the stake
-        //userStake.amount = 0;
         balanceOf[msg.sender] -= _amount;
-        // // Remove the stake by swapping it with the last element and then popping it
-        // uint256 lastIndex = stakes[msg.sender].length - 1;
-        // if (_stakeId != lastIndex) {
-        //     stakes[msg.sender][_stakeId] = stakes[msg.sender][lastIndex];
-        // }
-        // stakes[msg.sender].pop();
-
         totalSupply -= _amount;
 
         stakingToken.transfer(msg.sender, _amount);
@@ -353,14 +308,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         minLockPeriod = _minLockPeriod;
     }
 
-    // /**
-    //  * @dev Updates the maximum lock period.
-    //  * @param _maxLockPeriod The new maximum lock period in seconds.
-    //  */
-    // function updateMaxLockPeriod(uint256 _maxLockPeriod) external onlyOwner {
-    //     maxLockPeriod = _maxLockPeriod;
-    // }
-
     /**
      * @dev Allows the owner to recover ERC20 tokens mistakenly sent to the contract.
      * @param _token The address of the ERC20 token to recover.
@@ -410,47 +357,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         }
     }
 
-    // /**
-    //  * @dev Claims rewards for a given account across all reward tokens.
-    //  * Rewards are calculated based on the user's stakes and the global reward index.
-    //  * Emits the RewardClaimed event for each reward token.
-    //  * @param _account The address of the account to claim rewards for.
-    //  */
-    // function _claim(address _account) private {
-    //     // Update the user's rewards for all reward tokens
-    //     _updateRewards(_account);
-
-    //     for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
-    //         address rewardToken = allowedRewardTokens[i];
-    //         uint256 reward = earned[_account][rewardToken];
-
-    //         if (reward > 0) {
-    //             // Ensure sufficient balance exists for distribution or exit silently
-    //             // Stake specific balance check
-    //             if (rewardToken == address(stakingToken)) {
-    //                 uint256 availableBalance = IERC20(rewardToken).balanceOf(address(this)) - totalSupply;
-    //                 if (availableBalance >= reward) {
-    //                     earned[_account][rewardToken] = 0;
-
-    //                     // Transfer the reward to the user
-    //                     IERC20(rewardToken).transfer(_account, reward);
-    //                     rewardTotalSupply[rewardToken] -= reward;
-
-    //                     emit RewardClaimed(_account, rewardToken, reward);
-    //                 }
-    //             } else if (IERC20(rewardToken).balanceOf(address(this)) >= reward) {
-    //                 earned[_account][rewardToken] = 0;
-
-    //                 // Transfer the reward to the user
-    //                 IERC20(rewardToken).transfer(_account, reward);
-    //                 rewardTotalSupply[rewardToken] -= reward;
-
-    //                 emit RewardClaimed(_account, rewardToken, reward);
-    //             }
-    //         }
-    //     }
-    // }
-
     //////////////////////////////
     //////View functions//////////
     //////////////////////////////
@@ -487,18 +393,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     function _calculateRewards(address _account, address _rewardToken) private view returns (uint256) {
         uint256 rewards = 0;
-        //Stake[] memory userStakes = stakes[_account];
-
-        // for (uint256 i = 0; i < userStakes.length; i++) {
-        //     Stake memory _stake = userStakes[i];
-        //     uint256 stakeReward = (_stake.amount * (rewardIndex[_rewardToken] -
-        // rewardIndexOf[_account][_rewardToken]))
-        //     /* * _stake.lockMultiplier*/
-        //     / MULTIPLIER;
-
-        //     rewards += stakeReward;
-        // }
-
         uint256 stakeReward =
             (balanceOf[_account] * (rewardIndex[_rewardToken] - rewardIndexOf[_account][_rewardToken])) / MULTIPLIER;
 

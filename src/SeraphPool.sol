@@ -212,8 +212,17 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
         uint256 amount = userStake.amount;
 
+        // Silent claim rewards before unstaking
+        _claim(msg.sender);
+
         // Clear the stake
         userStake.amount = 0;
+        // Remove the stake by swapping it with the last element and then popping it
+        uint256 lastIndex = stakes[msg.sender].length - 1;
+        if (_stakeId != lastIndex) {
+            stakes[msg.sender][_stakeId] = stakes[msg.sender][lastIndex];
+        }
+        stakes[msg.sender].pop();
 
         totalSupply -= amount;
 
@@ -369,6 +378,44 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
                 rewardIndexOf[_account][token] = rewardIndex[token];
             }
         }
+    }
+
+    /**
+     * @dev Claims rewards for a given account across all reward tokens.
+     * Rewards are calculated based on the user's stakes and the global reward index.
+     * Emits the RewardClaimed event for each reward token.
+     * @param _account The address of the account to claim rewards for.
+     */
+    function _claim(address _account) private {
+        // Update the user's rewards for all reward tokens
+        _updateRewards(_account);
+
+        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
+            address rewardToken = allowedRewardTokens[i];
+            uint256 reward = earned[_account][rewardToken];
+
+            if (reward > 0) {
+                // Ensure sufficient balance exists for distribution or exit silently
+                if (IERC20(rewardToken).balanceOf(address(this)) >= reward) {
+                    earned[_account][rewardToken] = 0;
+
+                    // Transfer the reward to the user
+                    IERC20(rewardToken).transfer(_account, reward);
+                    rewardTotalSupply[rewardToken] -= _rewardAmount;
+
+                    emit RewardClaimed(_account, rewardToken, reward);
+                }
+            }
+        }
+    }
+
+    /**
+     * @dev Claims rewards for the caller across all reward tokens.
+     * Rewards are calculated based on the user's stakes and the global reward index.
+     * Emits the RewardClaimed event for each reward token.
+     */
+    function claim() external nonReentrant whenNotPaused {
+        _claim(msg.sender);
     }
 
     //////////////////////////////

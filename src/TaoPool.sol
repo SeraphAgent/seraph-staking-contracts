@@ -30,26 +30,26 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @title SeraphPool
+ * @title TaoPool
  * @dev A staking and reward distribution contract with time-based multipliers for stakers.
  */
-contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
+contract TaoPool is Ownable, ReentrancyGuard, Pausable {
     using SafeCast for *;
 
     //////////////////////////////
     //////Errors//////////////////
     //////////////////////////////
 
-    error SeraphPool__NoStakedTokens();
-    error SeraphPool__MinimumLockPeriod();
-    error SeraphPool__MaximumLockPeriod();
-    error SeraphPool__LockPeriodNotOver();
-    error SeraphPool__StakingCapExceeded();
-    error SeraphPool__RewardTokenNotFound();
-    error SeraphPool__EtherNotAccepted();
-    error SeraphPool__TokensNotAccepted();
-    error SeraphPool__RewardTokenNotAllowed();
-    error SeraphPool__InvalidStakeId();
+    error TaoPool__NoStakedTokens();
+    error TaoPool__MinimumLockPeriod();
+    error TaoPool__MaximumLockPeriod();
+    error TaoPool__LockPeriodNotOver();
+    error TaoPool__StakingCapExceeded();
+    error TaoPool__RewardTokenNotFound();
+    error TaoPool__EtherNotAccepted();
+    error TaoPool__TokensNotAccepted();
+    error TaoPool__RewardTokenNotAllowed();
+    error TaoPool__InvalidStakeId();
 
     //////////////////////////////
     //////State variables////////
@@ -154,7 +154,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Prevents accidental Ether transfers to the contract.
      */
     receive() external payable {
-        revert SeraphPool__EtherNotAccepted();
+        revert TaoPool__EtherNotAccepted();
     }
 
     //////////////////////////////
@@ -165,7 +165,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Prevents accidental token transfers to the contract.
      */
     fallback() external payable {
-        revert SeraphPool__TokensNotAccepted();
+        revert TaoPool__TokensNotAccepted();
     }
 
     //////////////////////////////
@@ -179,9 +179,10 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _lockPeriod The lock period in seconds.
      */
     function stake(uint256 _amount, uint256 _lockPeriod) external {
-        if (_lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
-        if (_lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
-        if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
+        if (_amount == 0) revert TaoPool__NoStakedTokens();
+        if (_lockPeriod < 1 weeks) revert TaoPool__MinimumLockPeriod();
+        if (_lockPeriod > 52 weeks) revert TaoPool__MaximumLockPeriod();
+        if (totalSupply + _amount > stakingCap) revert TaoPool__StakingCapExceeded();
 
         uint256 lockEndTime = block.timestamp + _lockPeriod;
         uint256 multiplier = MULTIPLIER + ((MAX_MULTIPLIER - MULTIPLIER) * _lockPeriod) / (52 weeks);
@@ -200,9 +201,9 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _stakeId The ID of the stake to unstake.
      */
     function unstake(uint256 _stakeId) external {
-        if (_stakeId >= stakes[msg.sender].length) revert SeraphPool__InvalidStakeId();
+        if (_stakeId >= stakes[msg.sender].length) revert TaoPool__InvalidStakeId();
         Stake storage userStake = stakes[msg.sender][_stakeId];
-        if (block.timestamp < userStake.lockEndTime) revert SeraphPool__LockPeriodNotOver();
+        if (block.timestamp < userStake.lockEndTime) revert TaoPool__LockPeriodNotOver();
 
         uint256 amount = userStake.amount;
 
@@ -234,7 +235,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
                 // Ensure sufficient balance exists for distribution
                 if (IERC20(rewardToken).balanceOf(address(this)) < reward) {
-                    revert SeraphPool__RewardTokenNotFound();
+                    revert TaoPool__RewardTokenNotFound();
                 }
 
                 // Transfer the reward to the user
@@ -323,8 +324,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _rewardAmount The amount of the reward tokens to distribute.
      */
     function updateRewardIndex(address _rewardToken, uint256 _rewardAmount) external onlyOwner {
-        if (!_isRewardTokenAllowed(_rewardToken)) revert SeraphPool__RewardTokenNotAllowed();
-        if (totalSupply == 0) revert SeraphPool__NoStakedTokens();
+        if (!_isRewardTokenAllowed(_rewardToken)) revert TaoPool__RewardTokenNotAllowed();
+        if (totalSupply == 0) revert TaoPool__NoStakedTokens();
 
         rewardTotalSupply[_rewardToken] += _rewardAmount;
         IERC20(_rewardToken).transferFrom(msg.sender, address(this), _rewardAmount);
@@ -338,7 +339,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _rewardToken The reward token address.
      */
     function addRewardToken(address _rewardToken) external onlyOwner {
-        if (_isRewardTokenAllowed(_rewardToken)) revert SeraphPool__RewardTokenNotAllowed();
+        if (_isRewardTokenAllowed(_rewardToken)) revert TaoPool__RewardTokenNotAllowed();
 
         allowedRewardTokens.push(_rewardToken);
         emit RewardTokenAdded(_rewardToken);
@@ -358,7 +359,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
                 break;
             }
         }
-        if (!found) revert SeraphPool__RewardTokenNotFound();
+        if (!found) revert TaoPool__RewardTokenNotFound();
 
         emit RewardTokenRemoved(_rewardToken);
     }
@@ -370,5 +371,17 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     function updateStakingCap(uint256 _newCap) external onlyOwner {
         stakingCap = _newCap;
         emit StakingCapUpdated(_newCap);
+    }
+
+    function getStakedToken() external view returns (address) {
+        return address(stakingToken);
+    }
+
+    function getStakeBalance(address _account) external view returns (uint256 balance) {
+        Stake[] memory userStakes = stakes[_account];
+        for (uint256 i = 0; i < userStakes.length; i++) {
+            balance += userStakes[i].amount;
+        }
+        return balance;
     }
 }

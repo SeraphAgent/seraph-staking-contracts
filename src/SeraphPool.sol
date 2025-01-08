@@ -186,6 +186,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _lockPeriod The lock period in seconds.
      */
     function stake(uint256 _amount, uint256 _lockPeriod) external nonReentrant whenNotPaused {
+        if (_amount == 0) revert SeraphPool__NoStakedTokens();
         if (_lockPeriod < minLockPeriod) revert SeraphPool__MinimumLockPeriod();
         if (_lockPeriod > maxLockPeriod) revert SeraphPool__MaximumLockPeriod();
         if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
@@ -211,6 +212,11 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     function unstake(uint256 _stakeId) external nonReentrant {
         if (_stakeId >= stakes[msg.sender].length) revert SeraphPool__InvalidStakeId();
         Stake storage userStake = stakes[msg.sender][_stakeId];
+
+        // Check for zero amount
+        if (userStake.amount == 0) revert SeraphPool__NoStakedTokens();
+
+        // Check for lock period
         if (block.timestamp < userStake.lockEndTime) revert SeraphPool__LockPeriodNotOver();
 
         _updateRewards(msg.sender);
@@ -482,5 +488,17 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         }
 
         return rewards;
+    }
+
+    function getStakedToken() external view returns (address) {
+        return address(stakingToken);
+    }
+
+    function getStakeBalance(address _account) external view returns (uint256 balance) {
+        Stake[] memory userStakes = stakes[_account];
+        for (uint256 i = 0; i < userStakes.length; i++) {
+            balance += userStakes[i].amount;
+        }
+        return balance;
     }
 }

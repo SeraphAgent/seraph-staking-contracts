@@ -25,19 +25,6 @@
   },
   {
     "type": "function",
-    "name": "MAX_MULTIPLIER",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "addRewardToken",
     "inputs": [
       {
@@ -64,6 +51,25 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -101,8 +107,14 @@
   },
   {
     "type": "function",
-    "name": "maxLockPeriod",
-    "inputs": [],
+    "name": "lockEndTime",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "outputs": [
       {
         "name": "",
@@ -223,49 +235,10 @@
         "name": "_amount",
         "type": "uint256",
         "internalType": "uint256"
-      },
-      {
-        "name": "_lockPeriod",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "stakes",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "lockEndTime",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "lockMultiplier",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -331,20 +304,7 @@
     "name": "unstake",
     "inputs": [
       {
-        "name": "_stakeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "updateMaxLockPeriod",
-    "inputs": [
-      {
-        "name": "_maxLockPeriod",
+        "name": "_amount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -532,12 +492,6 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "_stakeId",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -580,12 +534,6 @@
       },
       {
         "name": "_amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "_stakeId",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"

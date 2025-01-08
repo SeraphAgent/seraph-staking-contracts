@@ -50,6 +50,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     error SeraphPool__TokensNotAccepted();
     error SeraphPool__RewardTokenNotAllowed();
     error SeraphPool__InvalidStakeId();
+    error SeraphPool__BalanceMismatch();
 
     //////////////////////////////
     //////State variables////////
@@ -247,6 +248,14 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
                 // Reset the earned rewards for the token
                 earned[msg.sender][rewardToken] = 0;
 
+                // Stake specific balance check
+                if (
+                    rewardToken == address(stakingToken)
+                        && (IERC20(rewardToken).balanceOf(address(this)) - totalSupply) < reward
+                ) {
+                    revert SeraphPool__BalanceMismatch();
+                }
+
                 // Ensure sufficient balance exists for distribution
                 if (IERC20(rewardToken).balanceOf(address(this)) < reward) {
                     revert SeraphPool__RewardTokenNotFound();
@@ -254,6 +263,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
                 // Transfer the reward to the user
                 IERC20(rewardToken).transfer(msg.sender, reward);
+                rewardTotalSupply[rewardToken] -= reward;
 
                 emit RewardClaimed(msg.sender, rewardToken, reward);
             }
@@ -396,7 +406,19 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
             if (reward > 0) {
                 // Ensure sufficient balance exists for distribution or exit silently
-                if (IERC20(rewardToken).balanceOf(address(this)) >= reward) {
+                // Stake specific balance check
+                if (
+                    rewardToken == address(stakingToken)
+                        && (IERC20(rewardToken).balanceOf(address(this)) - totalSupply) >= reward
+                ) {
+                    earned[_account][rewardToken] = 0;
+
+                    // Transfer the reward to the user
+                    IERC20(rewardToken).transfer(_account, reward);
+                    rewardTotalSupply[rewardToken] -= reward;
+
+                    emit RewardClaimed(_account, rewardToken, reward);
+                } else if (IERC20(rewardToken).balanceOf(address(this)) >= reward) {
                     earned[_account][rewardToken] = 0;
 
                     // Transfer the reward to the user

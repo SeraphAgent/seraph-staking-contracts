@@ -8,6 +8,12 @@ The `SeraphPool` contract enables users to stake tokens, earn rewards, and withd
 
 **0x5A2517D2b002d8B60d53b26821783C13F9bcEf00**
 
+## ⚠️ Notes
+
+- Ensure ERC-20 approval before staking.
+- Users must wait until the lock period expires before unstaking.
+- The contract must have sufficient rewards before claiming.
+
 ## Functions & Integration
 
 ### Staking

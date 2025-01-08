@@ -22,3 +22,8 @@
 5. **Prep for Audit**
    - Proper docs and natspec
 6. **All Intermediate Tasks**
+
+//fix earned
+//fix totalSupply
+//fix negative value in reward index
+//may be divide stake multiplier?

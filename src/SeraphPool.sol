@@ -190,6 +190,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         if (_lockPeriod > maxLockPeriod) revert SeraphPool__MaximumLockPeriod();
         if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
 
+        _updateRewards(msg.sender);
+
         uint256 lockEndTime = block.timestamp + _lockPeriod;
         uint256 multiplier = MULTIPLIER + ((MAX_MULTIPLIER - MULTIPLIER) * _lockPeriod) / (maxLockPeriod);
 
@@ -210,6 +212,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         if (_stakeId >= stakes[msg.sender].length) revert SeraphPool__InvalidStakeId();
         Stake storage userStake = stakes[msg.sender][_stakeId];
         if (block.timestamp < userStake.lockEndTime) revert SeraphPool__LockPeriodNotOver();
+
+        _updateRewards(msg.sender);
 
         uint256 amount = userStake.amount;
 
@@ -472,7 +476,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
             uint256 stakeReward = (
                 _stake.amount * (rewardIndex[_rewardToken] - rewardIndexOf[_account][_rewardToken])
                     * _stake.lockMultiplier
-            ) / MULTIPLIER;
+            ) / MAX_MULTIPLIER;
 
             rewards += stakeReward;
         }

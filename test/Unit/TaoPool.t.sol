@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import { Test } from "forge-std/Test.sol";
 import { TaoPool } from "../../src/TaoPool.sol";
@@ -83,40 +83,29 @@ contract TaoPoolTest is Test {
         assertEq(pool.totalSupply(), STAKE_AMOUNT * 2);
     }
 
-    // TODO: Implement withdraw function
-    // function testWithdraw() public {
+    // TODO: Add test for claim rewards
+    // function testClaimRewards() public {
     //     vm.prank(alice);
     //     pool.stake(STAKE_AMOUNT, 1 weeks);
 
-    //     // Move forward 1 day
+    //     // Move forward 1 week
     //     vm.warp(block.timestamp + 1 weeks);
 
-    //     vm.prank(alice);
-    //     pool.unstake(0); // Assuming unstake takes a stake ID
+    //     // Assume rewards are distributed
+    //     pool.updateRewardIndex(address(rewardsToken), 100e18);
 
-    //     assertEq(pool.getStakeBalance(alice), 0);
-    //     assertEq(pool.totalSupply(), 0);
-    //     assertEq(stakedToken.balanceOf(address(pool)), 0);
-    //     assertEq(stakedToken.balanceOf(alice), INITIAL_BALANCE);
+    //     vm.prank(alice);
+    //     pool.claim();
+
+    //     uint256 rewardsBalance = rewardsToken.balanceOf(alice);
+    //     assertGt(rewardsBalance, 0, "Alice should have received rewards");
     // }
 
-    // function testWithdrawZeroAmount() public {
-    //     vm.prank(alice);
-    //     pool.stake(STAKE_AMOUNT, 1 weeks);
-
+    // function testClaimWithoutStaking() public {
     //     vm.prank(alice);
     //     vm.expectRevert(TaoPool__NoStakedTokens.selector);
-    //     pool.unstake(0); // Assuming unstake takes a stake ID
+    //     pool.claim();
     // }
 
-    // function testWithdrawMoreThanStaked() public {
-    //     vm.prank(alice);
-    //     pool.stake(STAKE_AMOUNT, 1 weeks);
-
-    //     vm.prank(alice);
-    //     vm.expectRevert(TaoPool__NoStakedTokens.selector);
-    //     pool.unstake(0); // Assuming unstake takes a stake ID
-    // }
-
-    // Add more tests for reward claiming, reward calculation, etc.
+    // Add more tests for reward calculation, etc.
 }

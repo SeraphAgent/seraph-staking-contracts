@@ -10,6 +10,7 @@ The `SeraphPool` contract facilitates staking of ERC-20 tokens, reward distribut
 
 ## Important Considerations
 
+- **StakingCap & minLockTime:** 10k SERAPH & 500s
 - **Approval Required:** Users must approve the contract to spend tokens before staking.
 - **Lock Period:** Tokens can only be unstaked after the lock period expires.
 - **Sufficient Rewards:** The contract must have sufficient rewards before claims can be processed.

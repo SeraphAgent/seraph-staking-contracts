@@ -6,7 +6,7 @@ The `SeraphPool` contract enables users to stake tokens, earn rewards, and withd
 
 ## Contract Details on Base
 
-**0x5A2517D2b002d8B60d53b26821783C13F9bcEf00**
+**0x62b30d0e2e01926ec134969befd7b20767384672**
 
 ## ⚠️ Notes
 

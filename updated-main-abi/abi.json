@@ -632,6 +632,11 @@
   },
   {
     "type": "error",
+    "name": "SeraphPool__BalanceMismatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "SeraphPool__EtherNotAccepted",
     "inputs": []
   },

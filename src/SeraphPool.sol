@@ -115,6 +115,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     uint256 public constant MAX_MULTIPLIER = 3 * MULTIPLIER; // Maximum 3x rewards for the longest lock
 
     /**
+     * @dev The lock periods.
+     */
+    uint256 public minLockPeriod;
+    uint256 public maxLockPeriod = 52 weeks;
+
+    /**
      * @dev Maximum staking cap for the pool.
      */
     uint256 public stakingCap;
@@ -179,12 +185,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _lockPeriod The lock period in seconds.
      */
     function stake(uint256 _amount, uint256 _lockPeriod) external nonReentrant whenNotPaused {
-        if (_lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
-        if (_lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
+        if (_lockPeriod < minLockPeriod) revert SeraphPool__MinimumLockPeriod();
+        if (_lockPeriod > maxLockPeriod) revert SeraphPool__MaximumLockPeriod();
         if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
 
         uint256 lockEndTime = block.timestamp + _lockPeriod;
-        uint256 multiplier = MULTIPLIER + ((MAX_MULTIPLIER - MULTIPLIER) * _lockPeriod) / (52 weeks);
+        uint256 multiplier = MULTIPLIER + ((MAX_MULTIPLIER - MULTIPLIER) * _lockPeriod) / (maxLockPeriod);
 
         // Add the new stake entry
         stakes[msg.sender].push(Stake({ amount: _amount, lockEndTime: lockEndTime, lockMultiplier: multiplier }));
@@ -245,78 +251,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         }
     }
 
-    //////////////////////////////
-    //////Private functions///////
-    //////////////////////////////
-
-    /**
-     * @dev Checks if a reward token is allowed.
-     * @param _rewardToken The address of the reward token.
-     * @return True if the reward token is allowed, false otherwise.
-     */
-    function _isRewardTokenAllowed(address _rewardToken) private view returns (bool) {
-        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
-            if (allowedRewardTokens[i] == _rewardToken) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @dev Calculates the rewards for a given account and reward token.
-     * @param _account The address of the account to calculate rewards for.
-     * @param _rewardToken The address of the reward token.
-     * @return The calculated reward amount.
-     */
-    function _calculateRewards(address _account, address _rewardToken) private view returns (uint256) {
-        uint256 rewards = 0;
-        Stake[] memory userStakes = stakes[_account];
-
-        for (uint256 i = 0; i < userStakes.length; i++) {
-            Stake memory _stake = userStakes[i];
-            uint256 stakeReward = (
-                _stake.amount * (rewardIndex[_rewardToken] - rewardIndexOf[_account][_rewardToken])
-                    * _stake.lockMultiplier
-            ) / (MULTIPLIER * MULTIPLIER);
-            rewards += stakeReward;
-        }
-
-        return rewards;
-    }
-
-    /**
-     * @dev Updates the rewards for a given account across all stakes.
-     * @param _account The address of the account to update rewards for.
-     */
-    function _updateRewards(address _account) private {
-        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
-            address token = allowedRewardTokens[i];
-            if (rewardIndex[token] > 0) {
-                earned[_account][token] += _calculateRewards(_account, token);
-                rewardIndexOf[_account][token] = rewardIndex[token];
-            }
-        }
-    }
-
-    //////////////////////////////
-    //////View functions//////////
-    //////////////////////////////
-
-    /**
-     * @dev Returns the rewards earned by a given account for a specific reward token.
-     * @param _account The address of the account to check rewards for.
-     * @param _rewardToken The address of the reward token.
-     * @return The total rewards earned by the account.
-     */
-    function calculateRewardsEarned(address _account, address _rewardToken) external view returns (uint256) {
-        return earned[_account][_rewardToken] + _calculateRewards(_account, _rewardToken);
-    }
-
-    //////////////////////////////
-    //////External functions//////
-    //////////////////////////////
-
     /**
      * @dev Updates the reward index for a reward token.
      * @param _rewardToken The address of the reward token.
@@ -373,6 +307,22 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
+     * @dev Updates the minimum lock period.
+     * @param _minLockPeriod The new minimum lock period in seconds.
+     */
+    function updateMinLockPeriod(uint256 _minLockPeriod) external onlyOwner {
+        minLockPeriod = _minLockPeriod;
+    }
+
+    /**
+     * @dev Updates the maximum lock period.
+     * @param _maxLockPeriod The new maximum lock period in seconds.
+     */
+    function updateMaxLockPeriod(uint256 _maxLockPeriod) external onlyOwner {
+        maxLockPeriod = _maxLockPeriod;
+    }
+
+    /**
      * @dev Allows the owner to recover ERC20 tokens mistakenly sent to the contract.
      * @param _token The address of the ERC20 token to recover.
      * @param _amount The amount of tokens to recover.
@@ -401,5 +351,73 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     function unpause() external whenPaused onlyOwner {
         super._unpause();
+    }
+
+    //////////////////////////////
+    //////Private functions///////
+    //////////////////////////////
+
+    /**
+     * @dev Updates the rewards for a given account across all stakes.
+     * @param _account The address of the account to update rewards for.
+     */
+    function _updateRewards(address _account) private {
+        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
+            address token = allowedRewardTokens[i];
+            if (rewardIndex[token] > 0) {
+                earned[_account][token] += _calculateRewards(_account, token);
+                rewardIndexOf[_account][token] = rewardIndex[token];
+            }
+        }
+    }
+
+    //////////////////////////////
+    //////View functions//////////
+    //////////////////////////////
+
+    /**
+     * @dev Returns the rewards earned by a given account for a specific reward token.
+     * @param _account The address of the account to check rewards for.
+     * @param _rewardToken The address of the reward token.
+     * @return The total rewards earned by the account.
+     */
+    function calculateRewardsEarned(address _account, address _rewardToken) external view returns (uint256) {
+        return earned[_account][_rewardToken] + _calculateRewards(_account, _rewardToken);
+    }
+
+    /**
+     * @dev Checks if a reward token is allowed.
+     * @param _rewardToken The address of the reward token.
+     * @return True if the reward token is allowed, false otherwise.
+     */
+    function _isRewardTokenAllowed(address _rewardToken) private view returns (bool) {
+        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
+            if (allowedRewardTokens[i] == _rewardToken) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @dev Calculates the rewards for a given account and reward token.
+     * @param _account The address of the account to calculate rewards for.
+     * @param _rewardToken The address of the reward token.
+     * @return The calculated reward amount.
+     */
+    function _calculateRewards(address _account, address _rewardToken) private view returns (uint256) {
+        uint256 rewards = 0;
+        Stake[] memory userStakes = stakes[_account];
+
+        for (uint256 i = 0; i < userStakes.length; i++) {
+            Stake memory _stake = userStakes[i];
+            uint256 stakeReward = (
+                _stake.amount * (rewardIndex[_rewardToken] - rewardIndexOf[_account][_rewardToken])
+                    * _stake.lockMultiplier
+            ) / (MULTIPLIER * MULTIPLIER);
+            rewards += stakeReward;
+        }
+
+        return rewards;
     }
 }

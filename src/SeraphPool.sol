@@ -178,7 +178,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _amount The amount of tokens to stake.
      * @param _lockPeriod The lock period in seconds.
      */
-    function stake(uint256 _amount, uint256 _lockPeriod) external nonReentrant {
+    function stake(uint256 _amount, uint256 _lockPeriod) external nonReentrant whenNotPaused {
         if (_lockPeriod < 1 weeks) revert SeraphPool__MinimumLockPeriod();
         if (_lockPeriod > 52 weeks) revert SeraphPool__MaximumLockPeriod();
         if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
@@ -379,5 +379,27 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     function recoverERC20(address _token, uint256 _amount) external onlyOwner {
         IERC20(_token).transfer(msg.sender, _amount);
+    }
+
+    /**
+     * @dev Triggers stopped state.
+     *
+     * Requirements:
+     *
+     * - The contract must not be paused.
+     */
+    function pause() external whenNotPaused onlyOwner {
+        super._pause();
+    }
+
+    /**
+     * @dev Returns to normal state.
+     *
+     * Requirements:
+     *
+     * - The contract must be paused.
+     */
+    function unpause() external whenPaused onlyOwner {
+        super._unpause();
     }
 }

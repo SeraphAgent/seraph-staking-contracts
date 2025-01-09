@@ -6,13 +6,13 @@ The `SeraphPool` contract facilitates staking of ERC-20 tokens, reward distribut
 
 ## Contract Information
 
-**Contract Address (Base Chain):** `0xC4C1877971eAf71fac5A5826B0d103656109d67D`
+**Contract Address (Base Chain):** `0xd4F3aa15cFC819846Fc7a001c240eb9ea00f0108`
 **Contract Address stTAO (Base Chain):** `0x4f81837C2f4A189A0B69370027cc2627d93785B4`
 **Contract Address SERAPH (Base Chain):** `0x806041b6473da60abbe1b256d9a2749a151be6c6`
 
 ## Important Considerations
 
-- **StakingCap & minLockTime:** 10k SERAPH & 500s
+- **StakingCap & minLockTime:** 1% SERAPH & 2 weeks
 - **Approval Required:** Users must approve the contract to spend tokens before staking.
 - **Lock Period:** Tokens can only be unstaked after the lock period expires.
 - **Sufficient Rewards:** The contract must have sufficient rewards before claims can be processed.

@@ -2,70 +2,75 @@
 
 ## Overview
 
-The `SeraphPool` contract enables users to stake tokens, earn rewards, and withdraw them based on lock periods. This guide outlines the smart contract's key functions and how to integrate them into a frontend.
+The `SeraphPool` contract is a staking and reward distribution system for ERC-20 tokens. It allows users to stake tokens, earn rewards, and withdraw their tokens based on predefined lock periods. This guide provides details on integrating the smart contract into a frontend application.
 
-## Contract Details on Base
+## Contract Information
 
-**0xb9262208c2c8f7D16Ea90671f858CBE6bdC179E6**
+- **Contract Address (Base Chain):** `0xd4F3aa15cFC819846Fc7a001c240eb9ea00f0108`
+- **Contract Address stTAO (Base Chain):** `0x4f81837C2f4A189A0B69370027cc2627d93785B4`
+- **Contract Address SERAPH (Base Chain):** `0x806041b6473da60abbe1b256d9a2749a151be6c6`
 
-## ⚠️ Notes
+## Key Considerations
 
-- Ensure ERC-20 approval before staking.
-- Users must wait until the lock period expires before unstaking.
-- The contract must have sufficient rewards before claiming.
+- **Staking Cap & Minimum Lock Time:** 5% SERAPH & 2 weeks.
+- **Approval Required:** Users must approve the contract to spend tokens before staking.
+- **Lock Period:** Tokens can only be unstaked after the lock period expires after any `stake` call (2 weeks).
+- **Sufficient Rewards:** The contract must have enough rewards before claims can be processed. Distributed in random times to stakers.
 
-## Functions & Integration
+## Function Guide & Integration
 
-### Staking
+### 1. Staking Tokens
 
-#### `stake(uint256 _amount, uint256 _lockPeriod)`
+#### `stake(uint256 _amount)`
 
-**Description:**  
-Allows users to stake ERC-20 tokens for a defined lock period.
+**Description:**
+Users can stake ERC-20 tokens in the pool.
 
 **Inputs:**
 
-- `_amount` (uint256): The amount of tokens to stake.
-- `_lockPeriod` (uint256): Duration in seconds (must be within min/max range).
+- `_amount` (`uint256`): Amount of tokens to stake.
 
 **Outputs:**
 
-- Emits `Staked` event: `(address user, uint256 amount, uint256 lockPeriod, uint256 stakeId)`
+- Emits `Staked` event: `(address user, uint256 amount, uint256 lockPeriod)`
 
-**Frontend Integration:**
+**Integration Steps:**
 
 1. Approve the contract to spend `_amount` tokens.
-2. Call `stake(_amount, _lockPeriod)`.
-3. Listen for `Staked` event.
+2. Call `stake(_amount)`.
+3. Listen for the `Staked` event.
 
-### Unstaking
+---
 
-#### `unstake(uint256 _stakeId)`
+### 2. Unstaking Tokens
 
-**Description:**  
-Allows users to withdraw staked tokens after the lock period.
+#### `unstake(uint256 _amount)`
+
+**Description:**
+Allows users to withdraw their staked tokens after the lock period has ended.
 
 **Inputs:**
 
-- `_stakeId` (uint256): The index of the stake.
+- `_amount` (`uint256`): Amount of tokens to unstake.
 
 **Outputs:**
 
-- Emits `Unstaked` event: `(address user, uint256 amount, uint256 stakeId)`
+- Emits `Unstaked` event: `(address user, uint256 amount)`
 
-**Frontend Integration:**
+**Integration Steps:**
 
-1. Fetch user's stakes.
-2. Check if lock period is over.
-3. Call `unstake(_stakeId)`.
-4. Listen for `Unstaked` event.
+1. Verify the lock period has expired.
+2. Call `unstake(_amount)`.
+3. Listen for the `Unstaked` event.
 
-### Claiming Rewards
+---
+
+### 3. Claiming Rewards
 
 #### `claim()`
 
-**Description:**  
-Users can claim rewards based on staking duration and reward distribution.
+**Description:**
+Users can claim earned rewards based on their stake duration.
 
 **Inputs:**
 
@@ -73,76 +78,108 @@ Users can claim rewards based on staking duration and reward distribution.
 
 **Outputs:**
 
-- Transfers reward tokens to user.
+- Transfers earned rewards to the user.
 - Emits `RewardClaimed` event: `(address user, address rewardToken, uint256 rewardAmount)`
 
-**Frontend Integration:**
+**Integration Steps:**
 
-1. Display pending rewards (`calculateRewardsEarned`).
+1. Display pending rewards using `calculateRewardsEarned`.
 2. Call `claim()`.
 3. Listen for `RewardClaimed` events.
 
-### Checking Rewards
+---
+
+### 4. Checking Earned Rewards
 
 #### `calculateRewardsEarned(address _account, address _rewardToken) → uint256`
 
-**Description:**  
-Returns the user's earned rewards for a specific token.
+**Description:**
+Returns the amount of rewards a user has earned.
 
 **Inputs:**
 
-- `_account` (address): User's wallet address.
-- `_rewardToken` (address): ERC-20 token address.
+- `_account` (`address`): User's wallet address.
+- `_rewardToken` (`address`): Address of the reward token.
 
 **Outputs:**
 
-- Returns `(uint256)`: Amount of rewards earned.
+- `uint256`: Amount of earned rewards.
 
-**Frontend Integration:**
+**Integration Steps:**
 
 1. Call `calculateRewardsEarned(userAddress, rewardTokenAddress)`.
-2. Display reward balance.
+2. Display the reward balance.
 
-### Admin Functions (Owner Only)
+---
+
+## Admin Functions (Owner Only)
+
+### Updating Reward Index
 
 #### `updateRewardIndex(address _rewardToken, uint256 _rewardAmount)`
 
-**Description:**  
-Admin updates the global reward index.
+**Description:**
+Allows the owner to update the reward index to distribute new rewards.
 
 **Inputs:**
 
-- `_rewardToken` (address): Token to distribute.
-- `_rewardAmount` (uint256): Amount to distribute.
+- `_rewardToken` (`address`): Token used for rewards.
+- `_rewardAmount` (`uint256`): Amount of tokens allocated for rewards.
+
+---
+
+### Managing Reward Tokens
 
 #### `addRewardToken(address _rewardToken)`
 
-**Description:**  
+**Description:**
 Adds a new reward token.
 
 **Inputs:**
 
-- `_rewardToken` (address): ERC-20 token.
+- `_rewardToken` (`address`): ERC-20 token.
 
 #### `removeRewardToken(address _rewardToken)`
 
-**Description:**  
-Removes a reward token.
+**Description:**
+Removes an existing reward token.
 
 **Inputs:**
 
-- `_rewardToken` (address): ERC-20 token.
+- `_rewardToken` (`address`): ERC-20 token.
+
+---
+
+### Managing Staking Cap
 
 #### `updateStakingCap(uint256 _newCap)`
 
-**Description:**  
-Updates max staking capacity.
+**Description:**
+Updates the staking cap for the pool.
 
 **Inputs:**
 
-- `_newCap` (uint256): New staking cap.
+- `_newCap` (`uint256`): New staking cap.
 
-#### `pause() / unpause()`
+---
 
-**Description:**  
-Pauses or resumes staking.
+### Contract Pause/Unpause
+
+#### `pause()` / `unpause()`
+
+**Description:**
+Allows the owner to pause or resume staking activities.
+
+---
+
+### Recovering ERC-20 Tokens
+
+#### `recoverERC20(address _token, uint256 _amount)`
+
+**Description:**
+Allows the owner to recover mistakenly sent ERC-20 tokens.
+
+**Inputs:**
+
+- `_token` (`address`): Address of the ERC-20 token.
+- `_amount` (`uint256`): Amount of tokens to recover.

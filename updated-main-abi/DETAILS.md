@@ -2,20 +2,20 @@
 
 ## Overview
 
-The `SeraphPool` contract facilitates staking of ERC-20 tokens, reward distribution, and controlled withdrawals based on lock periods. This document provides details for integrating the smart contract into a frontend application.
+The `SeraphPool` contract is a staking and reward distribution system for ERC-20 tokens. It allows users to stake tokens, earn rewards, and withdraw their tokens based on predefined lock periods. This guide provides details on integrating the smart contract into a frontend application.
 
 ## Contract Information
 
-**Contract Address (Base Chain):** `0xd4F3aa15cFC819846Fc7a001c240eb9ea00f0108`
-**Contract Address stTAO (Base Chain):** `0x4f81837C2f4A189A0B69370027cc2627d93785B4`
-**Contract Address SERAPH (Base Chain):** `0x806041b6473da60abbe1b256d9a2749a151be6c6`
+- **Contract Address (Base Chain):** `0xd4F3aa15cFC819846Fc7a001c240eb9ea00f0108`
+- **Contract Address stTAO (Base Chain):** `0x4f81837C2f4A189A0B69370027cc2627d93785B4`
+- **Contract Address SERAPH (Base Chain):** `0x806041b6473da60abbe1b256d9a2749a151be6c6`
 
-## Important Considerations
+## Key Considerations
 
-- **StakingCap & minLockTime:** 5% SERAPH & 2 weeks
+- **Staking Cap & Minimum Lock Time:** 5% SERAPH & 2 weeks.
 - **Approval Required:** Users must approve the contract to spend tokens before staking.
 - **Lock Period:** Tokens can only be unstaked after the lock period expires.
-- **Sufficient Rewards:** The contract must have sufficient rewards before claims can be processed.
+- **Sufficient Rewards:** The contract must have enough rewards before claims can be processed.
 
 ## Function Guide & Integration
 
@@ -83,7 +83,7 @@ Users can claim earned rewards based on their stake duration.
 
 **Integration Steps:**
 
-1. Display pending rewards (`calculateRewardsEarned`).
+1. Display pending rewards using `calculateRewardsEarned`.
 2. Call `claim()`.
 3. Listen for `RewardClaimed` events.
 
@@ -169,3 +169,17 @@ Updates the staking cap for the pool.
 
 **Description:**
 Allows the owner to pause or resume staking activities.
+
+---
+
+### Recovering ERC-20 Tokens
+
+#### `recoverERC20(address _token, uint256 _amount)`
+
+**Description:**
+Allows the owner to recover mistakenly sent ERC-20 tokens.
+
+**Inputs:**
+
+- `_token` (`address`): Address of the ERC-20 token.
+- `_amount` (`uint256`): Amount of tokens to recover.

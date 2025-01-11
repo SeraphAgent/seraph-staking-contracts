@@ -174,7 +174,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * Each stake is treated as an independent entry.
      * @param _amount The amount of tokens to stake.
      */
-    function stake(uint256 _amount /*uint256 _lockPeriod*/ ) external nonReentrant whenNotPaused {
+    function stake(uint256 _amount) external nonReentrant whenNotPaused {
         if (_amount == 0) revert SeraphPool__NoStakedTokens();
         if (totalSupply + _amount > stakingCap) revert SeraphPool__StakingCapExceeded();
 
@@ -237,8 +237,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
                 }
 
                 // Transfer the reward to the user
-                IERC20(rewardToken).transfer(msg.sender, reward);
                 rewardTotalSupply[rewardToken] -= reward;
+                IERC20(rewardToken).transfer(msg.sender, reward);
 
                 emit RewardClaimed(msg.sender, rewardToken, reward);
             }

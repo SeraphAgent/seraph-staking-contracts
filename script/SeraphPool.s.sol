@@ -7,10 +7,11 @@ import { SeraphPool } from "../src/SeraphPool.sol";
 contract SeraphPoolScript is Script {
     function setUp() public { }
 
-    function run() public {
+    function run() public returns (SeraphPool) {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        new SeraphPool(0x4f81837C2f4A189A0B69370027cc2627d93785B4, 0);
+        SeraphPool pool = new SeraphPool(0x4f81837C2f4A189A0B69370027cc2627d93785B4, 0);
         vm.stopBroadcast();
+        return pool;
     }
 }

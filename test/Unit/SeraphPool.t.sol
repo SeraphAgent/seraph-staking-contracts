@@ -9,6 +9,18 @@ import { StakedERC20Mock } from "../mocks/StakedERC20Mock.sol";
 import { RewardsERC20Mock } from "../mocks/RewardsERC20Mock.sol";
 import { SeraphPoolScript } from "../../script/SeraphPool.s.sol";
 
+error SeraphPool__NoStakedTokens();
+error SeraphPool__MinimumLockPeriod();
+error SeraphPool__MaximumLockPeriod();
+error SeraphPool__LockPeriodNotOver();
+error SeraphPool__StakingCapExceeded();
+error SeraphPool__RewardTokenNotFound();
+error SeraphPool__EtherNotAccepted();
+error SeraphPool__TokensNotAccepted();
+error SeraphPool__RewardTokenNotAllowed();
+error SeraphPool__InvalidStakeId();
+error SeraphPool__BalanceMismatch();
+
 contract SeraphPoolTest is StdCheats, Test {
     SeraphPool public pool;
     StakedERC20Mock public stakedToken;
@@ -149,5 +161,33 @@ contract SeraphPoolTest is StdCheats, Test {
         assertEq(stakedToken.balanceOf(staker2), 0);
         assertEq(rewardsToken2.balanceOf(owner), 0);
         assertEq(stakedToken.balanceOf(owner), 2e24);
+    }
+
+    function testUnstake() public {
+        uint256 stakerBalance = stakedToken.balanceOf(staker1);
+        uint256 stakedBalance;
+
+        vm.prank(owner);
+        pool.updateMinLockPeriod(2 weeks);
+        vm.prank(staker1);
+        stakedToken.approve(address(pool), 1_000_000 * 1e18);
+        vm.prank(staker1);
+        pool.stake(1_000_000 * 1e18);
+
+        stakerBalance = stakedToken.balanceOf(staker1);
+        stakedBalance = pool.balanceOf(staker1);
+
+        vm.prank(staker1);
+        vm.expectRevert(SeraphPool__LockPeriodNotOver.selector);
+        pool.unstake(1_000_000 * 1e18);
+        vm.warp(block.timestamp + 2 weeks);
+        vm.prank(staker1);
+        vm.expectRevert(SeraphPool__NoStakedTokens.selector);
+        pool.unstake(2_000_000 * 1e18);
+        vm.prank(staker1);
+        pool.unstake(1_000_000 * 1e18);
+        assertEq(pool.totalSupply(), 0);
+        assertEq(pool.balanceOf(staker1), 0);
+        assertEq(stakedToken.balanceOf(staker1), stakerBalance + stakedBalance);
     }
 }

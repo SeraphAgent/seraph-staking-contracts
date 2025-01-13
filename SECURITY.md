@@ -35,7 +35,7 @@ The security of SeraphPool.sol is of utmost importance. We offer bounties for id
 To participate in the bounty program, please follow these steps:
 
 1. Fork the repository and make your changes or identify the vulnerability.
-2. Submit a pull request with your contribution or a detailed report of the vulnerability.
+2. Submit a pull request with your contribution or a detailed report of the vulnerability at seraphaiagent@gmail.com
 3. Our team will review your submission and determine the appropriate reward based on the criteria above.
 
 Thank you for helping us improve Seraph!

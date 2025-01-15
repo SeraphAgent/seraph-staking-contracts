@@ -1,5 +1,11 @@
 # Staking Design Overview
 
+## Info
+
+- [SECURITY.md](./SECURITY.md)
+- [STAKING ANNOUNCEMENT.md](./STAKING%20ANNOUNCEMENT.md)
+- [DETAILS.md](./updated-main-abi/DETAILS.md)
+
 ## Goals
 
 1. **Simple**
@@ -20,9 +26,3 @@
    - Fuzz testing
    - Invariant testing
 5. **Prep for Audit**
-
-   ## More info
-
-   - [SECURITY.md](./SECURITY.md)
-   - [STAKING ANNOUNCEMENT.md](./STAKING%20ANNOUNCEMENT.md)
-   - [DETAILS.md](./updated-main-abi/DETAILS.md)

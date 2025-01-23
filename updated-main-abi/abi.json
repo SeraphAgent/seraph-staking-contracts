@@ -670,10 +670,5 @@
     "type": "error",
     "name": "SeraphPool__StakingCapExceeded",
     "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "SeraphPool__StakingTokenNotRemovable",
-    "inputs": []
   }
 ]

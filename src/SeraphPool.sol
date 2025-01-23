@@ -52,7 +52,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     error SeraphPool__RewardTokenNotAllowed();
     error SeraphPool__InvalidStakeId();
     error SeraphPool__BalanceMismatch();
-    error SeraphPool__StakingTokenNotRemovable();
 
     //////////////////////////////
     //////State variables////////
@@ -349,7 +348,13 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _amount The amount of tokens to recover.
      */
     function recoverERC20(address _token, uint256 _amount) external onlyOwner {
-        if (_token == address(stakingToken)) revert SeraphPool__StakingTokenNotRemovable();
+        if (_token == address(stakingToken)) {
+            uint256 availableBalance = IERC20(_token).balanceOf(msg.sender);
+            if (availableBalance < _amount) {
+                revert SeraphPool__BalanceMismatch();
+            }
+            balanceOf[msg.sender] -= _amount;
+        }
         IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 

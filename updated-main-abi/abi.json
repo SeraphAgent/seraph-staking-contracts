@@ -107,6 +107,38 @@
   },
   {
     "type": "function",
+    "name": "claimSingleToken",
+    "inputs": [
+      {
+        "name": "_rewardToken",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isRewardTokenAllowed",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "lockEndTime",
     "inputs": [
       {
@@ -580,12 +612,18 @@
   },
   {
     "type": "error",
-    "name": "SeraphPool__BalanceMismatch",
-    "inputs": []
+    "name": "SafeERC20FailedOperation",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
   },
   {
     "type": "error",
-    "name": "SeraphPool__EtherNotAccepted",
+    "name": "SeraphPool__BalanceMismatch",
     "inputs": []
   },
   {
@@ -615,6 +653,11 @@
   },
   {
     "type": "error",
+    "name": "SeraphPool__NotAccepted",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "SeraphPool__RewardTokenNotAllowed",
     "inputs": []
   },
@@ -630,7 +673,7 @@
   },
   {
     "type": "error",
-    "name": "SeraphPool__TokensNotAccepted",
+    "name": "SeraphPool__StakingTokenNotRemovable",
     "inputs": []
   }
 ]

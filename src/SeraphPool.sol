@@ -347,7 +347,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _token The address of the ERC20 token to recover.
      * @param _amount The amount of tokens to recover.
      */
-    function recoverERC20(address _token, uint256 _amount) external onlyOwner nonReentrant {
+    function recoverERC20(address _token, uint256 _amount) external onlyOwner {
         if (_token == address(stakingToken)) {
             uint256 availableBalance = IERC20(_token).balanceOf(address(this)) - totalSupply - rewardTotalSupply[_token];
             if (availableBalance < _amount) {

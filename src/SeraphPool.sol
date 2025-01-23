@@ -28,6 +28,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title SeraphPool
@@ -35,6 +36,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     using SafeCast for *;
+    using SafeERC20 for IERC20;
 
     //////////////////////////////
     //////Errors//////////////////
@@ -46,11 +48,11 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     error SeraphPool__LockPeriodNotOver();
     error SeraphPool__StakingCapExceeded();
     error SeraphPool__RewardTokenNotFound();
-    error SeraphPool__EtherNotAccepted();
-    error SeraphPool__TokensNotAccepted();
+    error SeraphPool__NotAccepted();
     error SeraphPool__RewardTokenNotAllowed();
     error SeraphPool__InvalidStakeId();
     error SeraphPool__BalanceMismatch();
+    error SeraphPool__StakingTokenNotRemovable();
 
     //////////////////////////////
     //////State variables////////
@@ -65,6 +67,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev List of allowed reward tokens.
      */
     address[] public allowedRewardTokens;
+
+    mapping(address => bool) public isRewardTokenAllowed;
 
     /**
      * @dev Mapping of reward tokens to their total supplies.
@@ -89,7 +93,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     /**
      * @dev The constant multiplier used for reward calculations.
      */
-    uint256 private constant MULTIPLIER = 1e18;
+    uint256 private constant MULTIPLIER = 1e36;
 
     /**
      * @dev The global reward index for each reward token.
@@ -151,7 +155,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @dev Prevents accidental Ether transfers to the contract.
      */
     receive() external payable {
-        revert SeraphPool__EtherNotAccepted();
+        revert SeraphPool__NotAccepted();
     }
 
     //////////////////////////////
@@ -159,10 +163,10 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     //////////////////////////////
 
     /**
-     * @dev Prevents accidental token transfers to the contract.
+     * @dev Prevents accidental calls.
      */
     fallback() external payable {
-        revert SeraphPool__TokensNotAccepted();
+        revert SeraphPool__NotAccepted();
     }
 
     //////////////////////////////
@@ -185,7 +189,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
         totalSupply += _amount;
 
-        stakingToken.transferFrom(msg.sender, address(this), _amount);
+        stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
         emit Staked(msg.sender, _amount, /*_lockPeriod*/ lockEndTime[msg.sender]);
     }
 
@@ -202,7 +206,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         balanceOf[msg.sender] -= _amount;
         totalSupply -= _amount;
 
-        stakingToken.transfer(msg.sender, _amount);
+        stakingToken.safeTransfer(msg.sender, _amount);
         emit Unstaked(msg.sender, _amount);
     }
 
@@ -238,10 +242,36 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
 
                 // Transfer the reward to the user
                 rewardTotalSupply[rewardToken] -= reward;
-                IERC20(rewardToken).transfer(msg.sender, reward);
+                IERC20(rewardToken).safeTransfer(msg.sender, reward);
 
                 emit RewardClaimed(msg.sender, rewardToken, reward);
             }
+        }
+    }
+
+    /**
+     * @dev Claims single token rewards for the caller.
+     * Rewards are calculated based on the user's stakes and the global reward index.
+     * Emits the RewardClaimed event for claimed token.
+     */
+    function claimSingleToken(address _rewardToken) external nonReentrant whenNotPaused {
+        _updateRewards(msg.sender);
+
+        uint256 reward = earned[msg.sender][_rewardToken];
+        if (reward > 0) {
+            // Clear out earned
+            earned[msg.sender][_rewardToken] = 0;
+
+            // Ensure contract holds enough for payout
+            if (IERC20(_rewardToken).balanceOf(address(this)) < reward) {
+                revert SeraphPool__RewardTokenNotFound();
+            }
+
+            // Transfer reward
+            rewardTotalSupply[_rewardToken] -= reward;
+            IERC20(_rewardToken).safeTransfer(msg.sender, reward);
+
+            emit RewardClaimed(msg.sender, _rewardToken, reward);
         }
     }
 
@@ -255,7 +285,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         if (totalSupply == 0) revert SeraphPool__NoStakedTokens();
 
         rewardTotalSupply[_rewardToken] += _rewardAmount;
-        IERC20(_rewardToken).transferFrom(msg.sender, address(this), _rewardAmount);
+        IERC20(_rewardToken).safeTransferFrom(msg.sender, address(this), _rewardAmount);
         rewardIndex[_rewardToken] += (_rewardAmount * MULTIPLIER) / totalSupply;
 
         emit RewardIndexUpdated(_rewardToken, _rewardAmount);
@@ -269,6 +299,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
         if (_isRewardTokenAllowed(_rewardToken)) revert SeraphPool__RewardTokenNotAllowed();
 
         allowedRewardTokens.push(_rewardToken);
+        isRewardTokenAllowed[_rewardToken] = true;
         emit RewardTokenAdded(_rewardToken);
     }
 
@@ -282,6 +313,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
             if (allowedRewardTokens[i] == _rewardToken) {
                 allowedRewardTokens[i] = allowedRewardTokens[allowedRewardTokens.length - 1];
                 allowedRewardTokens.pop();
+                isRewardTokenAllowed[_rewardToken] = false;
+                delete rewardIndex[_rewardToken];
                 found = true;
                 break;
             }
@@ -305,6 +338,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _minLockPeriod The new minimum lock period in seconds.
      */
     function updateMinLockPeriod(uint256 _minLockPeriod) external onlyOwner {
+        if (_minLockPeriod == 0) revert SeraphPool__MinimumLockPeriod();
+        if (_minLockPeriod > 30 days) revert SeraphPool__MaximumLockPeriod();
         minLockPeriod = _minLockPeriod;
     }
 
@@ -314,7 +349,8 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @param _amount The amount of tokens to recover.
      */
     function recoverERC20(address _token, uint256 _amount) external onlyOwner {
-        IERC20(_token).transfer(msg.sender, _amount);
+        if (_token == address(stakingToken)) revert SeraphPool__StakingTokenNotRemovable();
+        IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 
     /**
@@ -352,7 +388,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
             address token = allowedRewardTokens[i];
             if (rewardIndex[token] > 0) {
                 earned[_account][token] += _calculateRewards(_account, token);
-                rewardIndexOf[_account][token] = rewardIndex[token];
+                rewardIndexOf[token][_account] = rewardIndex[token];
             }
         }
     }
@@ -377,12 +413,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @return True if the reward token is allowed, false otherwise.
      */
     function _isRewardTokenAllowed(address _rewardToken) private view returns (bool) {
-        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
-            if (allowedRewardTokens[i] == _rewardToken) {
-                return true;
-            }
-        }
-        return false;
+        return isRewardTokenAllowed[_rewardToken];
     }
 
     /**
@@ -394,7 +425,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     function _calculateRewards(address _account, address _rewardToken) private view returns (uint256) {
         uint256 rewards = 0;
         uint256 stakeReward =
-            (balanceOf[_account] * (rewardIndex[_rewardToken] - rewardIndexOf[_account][_rewardToken])) / MULTIPLIER;
+            (balanceOf[_account] * (rewardIndex[_rewardToken] - rewardIndexOf[_rewardToken][_account])) / MULTIPLIER;
 
         rewards += stakeReward;
 

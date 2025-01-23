@@ -89,6 +89,30 @@ Users can claim earned rewards based on their stake duration.
 
 ---
 
+### 3.1. Claiming Single Token Rewards
+
+#### `claimSingleToken(address _rewardToken)`
+
+**Description:**
+Claims single token rewards for the caller. Rewards are calculated based on the user's stakes and the global reward index.
+
+**Inputs:**
+
+- `_rewardToken` (`address`): Address of the reward token.
+
+**Outputs:**
+
+- Transfers the claimed reward to the user.
+- Emits `RewardClaimed` event: `(address user, address rewardToken, uint256 rewardAmount)`
+
+**Integration Steps:**
+
+1. Ensure the contract is not paused.
+2. Call `claimSingleToken(_rewardToken)`.
+3. Listen for `RewardClaimed` events.
+
+---
+
 ### 4. Checking Earned Rewards
 
 #### `calculateRewardsEarned(address _account, address _rewardToken) → uint256`

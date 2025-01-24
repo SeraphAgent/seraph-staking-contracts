@@ -101,18 +101,11 @@
   {
     "type": "function",
     "name": "claim",
-    "inputs": [],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "claimSingleToken",
     "inputs": [
       {
-        "name": "_rewardToken",
-        "type": "address",
-        "internalType": "address"
+        "name": "_tokenAddresses",
+        "type": "address[]",
+        "internalType": "address[]"
       }
     ],
     "outputs": [],

@@ -135,6 +135,9 @@ contract SeraphPoolTest is StdCheats, Test {
     }
 
     function testClaim() public {
+        address[] memory rewardTokens = new address[](2);
+        rewardTokens[0] = address(rewardsToken1);
+        rewardTokens[1] = address(rewardsToken2);
         vm.prank(owner);
         pool.updateStakingCap(3 * 1e24);
         vm.prank(owner);
@@ -152,9 +155,9 @@ contract SeraphPoolTest is StdCheats, Test {
         vm.prank(staker2);
         pool.stake(1_000_000 * 1e18);
         vm.prank(staker1);
-        pool.claim();
+        pool.claim(rewardTokens);
         vm.prank(staker2);
-        pool.claim();
+        pool.claim(rewardTokens);
         assertEq(rewardsToken2.balanceOf(staker1), 2e24);
         assertEq(stakedToken.balanceOf(staker1), 0);
         assertEq(rewardsToken2.balanceOf(staker2), 1e24); //  original

@@ -67,49 +67,25 @@ Allows users to withdraw their staked tokens after the lock period has ended.
 
 ### 3. Claiming Rewards
 
-#### `claim()`
+#### `claim(address[] calldata _tokenAddresses)`
 
 **Description:**
-Users can claim earned rewards based on their stake duration.
+Claims rewards for the caller across an array of reward tokens. Rewards are calculated based on the user's stakes and the global reward index.
 
 **Inputs:**
 
-- None
+- `_tokenAddresses` (`address[]`): Array of reward token addresses.
 
 **Outputs:**
 
 - Transfers earned rewards to the user.
-- Emits `RewardClaimed` event: `(address user, address rewardToken, uint256 rewardAmount)`
-
-**Integration Steps:**
-
-1. Display pending rewards using `calculateRewardsEarned`.
-2. Call `claim()`.
-3. Listen for `RewardClaimed` events.
-
----
-
-### 3.1. Claiming Single Token Rewards
-
-#### `claimSingleToken(address _rewardToken)`
-
-**Description:**
-Claims single token rewards for the caller. Rewards are calculated based on the user's stakes and the global reward index.
-
-**Inputs:**
-
-- `_rewardToken` (`address`): Address of the reward token.
-
-**Outputs:**
-
-- Transfers the claimed reward to the user.
-- Emits `RewardClaimed` event: `(address user, address rewardToken, uint256 rewardAmount)`
+- Emits `RewardClaimed` event for each claimed token: `(address user, address rewardToken, uint256 rewardAmount)`
 
 **Integration Steps:**
 
 1. Ensure the contract is not paused.
-2. Call `claimSingleToken(_rewardToken)`.
-3. Listen for `RewardClaimed` events.
+2. Call `claim(_tokenAddresses)`.
+3. Listen for `RewardClaimed` events for each token in `_tokenAddresses`.
 
 ---
 

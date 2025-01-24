@@ -210,67 +210,30 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @dev Claims rewards for the caller across all reward tokens.
-     * Rewards are calculated based on the user's stakes and the global reward index.
-     * Emits the RewardClaimed event for each reward token.
-     */
-    function claim() external nonReentrant whenNotPaused {
-        // Update the user's rewards for all reward tokens
-        _updateRewards(msg.sender);
-
-        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
-            address rewardToken = allowedRewardTokens[i];
-            uint256 reward = earned[msg.sender][rewardToken];
-
-            if (reward > 0) {
-                // Reset the earned rewards for the token
-                earned[msg.sender][rewardToken] = 0;
-
-                // Stake specific balance check
-                if (rewardToken == address(stakingToken)) {
-                    uint256 availableBalance = IERC20(rewardToken).balanceOf(address(this)) - totalSupply;
-                    if (availableBalance < reward) {
-                        revert SeraphPool__BalanceMismatch();
-                    }
-                }
-
-                // Ensure sufficient balance exists for distribution
-                if (IERC20(rewardToken).balanceOf(address(this)) < reward) {
-                    revert SeraphPool__RewardTokenNotFound();
-                }
-
-                // Transfer the reward to the user
-                rewardTotalSupply[rewardToken] -= reward;
-                IERC20(rewardToken).safeTransfer(msg.sender, reward);
-
-                emit RewardClaimed(msg.sender, rewardToken, reward);
-            }
-        }
-    }
-
-    /**
-     * @dev Claims single token rewards for the caller.
+     * @dev Claims rewards for the caller across an array of reward tokens.
      * Rewards are calculated based on the user's stakes and the global reward index.
      * Emits the RewardClaimed event for claimed token.
      */
-    function claimSingleToken(address _rewardToken) external nonReentrant whenNotPaused {
+    function claim(address[] calldata _tokenAddresses) external nonReentrant whenNotPaused {
         _updateRewards(msg.sender);
 
-        uint256 reward = earned[msg.sender][_rewardToken];
-        if (reward > 0) {
-            // Clear out earned
-            earned[msg.sender][_rewardToken] = 0;
+        for (uint256 i = 0; i < _tokenAddresses.length; i++) {
+            uint256 reward = earned[msg.sender][_tokenAddresses[i]];
+            if (reward > 0) {
+                // Clear out earned
+                earned[msg.sender][_tokenAddresses[i]] = 0;
 
-            // Ensure contract holds enough for payout
-            if (IERC20(_rewardToken).balanceOf(address(this)) < reward) {
-                revert SeraphPool__RewardTokenNotFound();
+                // Ensure contract holds enough for payout
+                if (IERC20(_tokenAddresses[i]).balanceOf(address(this)) < reward) {
+                    revert SeraphPool__RewardTokenNotFound();
+                }
+
+                // Transfer reward
+                rewardTotalSupply[_tokenAddresses[i]] -= reward;
+                IERC20(_tokenAddresses[i]).safeTransfer(msg.sender, reward);
+
+                emit RewardClaimed(msg.sender, _tokenAddresses[i], reward);
             }
-
-            // Transfer reward
-            rewardTotalSupply[_rewardToken] -= reward;
-            IERC20(_rewardToken).safeTransfer(msg.sender, reward);
-
-            emit RewardClaimed(msg.sender, _rewardToken, reward);
         }
     }
 

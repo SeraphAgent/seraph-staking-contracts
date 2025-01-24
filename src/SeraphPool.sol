@@ -376,7 +376,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      */
     function _calculateRewards(address _account, address _rewardToken) private view returns (uint256) {
         uint256 stakeReward;
-        if (rewardIndex[_rewardToken] >= rewardIndexOf[_rewardToken][_account]) {
+        if (rewardIndex[_rewardToken] > rewardIndexOf[_rewardToken][_account]) {
             stakeReward =
                 (balanceOf[_account] * (rewardIndex[_rewardToken] - rewardIndexOf[_rewardToken][_account])) / MULTIPLIER;
         }

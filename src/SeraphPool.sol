@@ -314,6 +314,7 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
                 allowedRewardTokens.pop();
                 isRewardTokenAllowed[_rewardToken] = false;
                 delete rewardIndex[_rewardToken];
+                rewardTotalSupply[_rewardToken] = 0;
                 found = true;
                 break;
             }
@@ -433,12 +434,12 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
      * @return The calculated reward amount.
      */
     function _calculateRewards(address _account, address _rewardToken) private view returns (uint256) {
-        uint256 rewards = 0;
-        uint256 stakeReward =
-            (balanceOf[_account] * (rewardIndex[_rewardToken] - rewardIndexOf[_rewardToken][_account])) / MULTIPLIER;
+        uint256 stakeReward;
+        if (rewardIndex[_rewardToken] >= rewardIndexOf[_rewardToken][_account]) {
+            stakeReward =
+                (balanceOf[_account] * (rewardIndex[_rewardToken] - rewardIndexOf[_rewardToken][_account])) / MULTIPLIER;
+        }
 
-        rewards += stakeReward;
-
-        return rewards;
+        return stakeReward;
     }
 }

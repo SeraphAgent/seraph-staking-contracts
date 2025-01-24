@@ -303,28 +303,6 @@ contract SeraphPool is Ownable, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @dev Removes a reward token from the allowed list.
-     * @param _rewardToken The reward token address.
-     */
-    function removeRewardToken(address _rewardToken) external onlyOwner {
-        bool found = false;
-        for (uint256 i = 0; i < allowedRewardTokens.length; i++) {
-            if (allowedRewardTokens[i] == _rewardToken) {
-                allowedRewardTokens[i] = allowedRewardTokens[allowedRewardTokens.length - 1];
-                allowedRewardTokens.pop();
-                isRewardTokenAllowed[_rewardToken] = false;
-                delete rewardIndex[_rewardToken];
-                rewardTotalSupply[_rewardToken] = 0;
-                found = true;
-                break;
-            }
-        }
-        if (!found) revert SeraphPool__RewardTokenNotFound();
-
-        emit RewardTokenRemoved(_rewardToken);
-    }
-
-    /**
      * @dev Updates the staking cap.
      * @param _newCap The new staking cap.
      */

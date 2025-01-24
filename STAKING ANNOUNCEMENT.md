@@ -2,22 +2,29 @@
 
 ## Staking is Live for $SERAPH! 🎉
 
+### Audited by Code4rena-Zenith
+
 [Stake Now](https://seraphai.xyz/stake)
 
-The $SERAPH v1 staking contract is officially live! This marks the beginning of a new era for $SERAPH holders, unlocking exciting rewards and long-term benefits.
+The $SERAPH v1 and v2 staking contracts are officially live! This marks the beginning of a new era for $SERAPH holders, unlocking exciting rewards and long-term benefits.
+
+V1 Stakers will continue receiving proportional rewards, but new stakes in V1 contract will not be accepted. V1 Stakers can migrate to unlimited cap V2 at any convenient time!
 
 ### Key Details:
 
 - **Contract Addresses:**
-  - **SeraphPool Contract (Base Chain):** `0xd4F3aa15cFC819846Fc7a001c240eb9ea00f0108`
+
+  - **Contract Address Staking v2 (Base Chain), unlimited staking cap:** `0xD4b47EE9879470179bAC7BECf49d2755ce5a8ea0`
+
   - **stTAO Rewards Contract (Base Chain):** `0x4f81837C2f4A189A0B69370027cc2627d93785B4`
   - **SERAPH Rewards Contract (Base Chain):** `0x806041b6473da60abbe1b256d9a2749a151be6c6`
-- **5% Total Supply of SERAPH is initially available for staking cap**
+  - **SeraphPool Contract (Base Chain) v1 (cap and slow migration to v2):** `0xd4F3aa15cFC819846Fc7a001c240eb9ea00f0108`
+
 - **2-Week Delay** after any staking action ensures fair participation
 
 ---
 
-## $SERAPH Staking v1 Details
+## $SERAPH Staking Details
 
 ### 🚀 **Earn Dynamic Rewards**
 
@@ -31,9 +38,9 @@ The $SERAPH v1 staking contract is officially live! This marks the beginning of 
 
 3. **2-Week Lock on Staking Actions** – Ensures fairness and prevents instant staking for rewards without commitment.
 
-4. **$SERAPH Staking Cap Expansion** – The initial cap is **50M $SERAPH**, but it will increase to **100M (10% of supply)** in the coming weeks.
+4. **Security Bounties** – Official security bug bounties live!
 
-5. **Security Bounties** – Official security bug bounties will launch soon!
+5. **Audited by Code4rena-Zenith (V2)**
 
 ---
 
@@ -47,5 +54,3 @@ The $SERAPH v1 staking contract is officially live! This marks the beginning of 
 ### 🔗 **Start Staking Today:**
 
 [Stake Now](https://seraphai.xyz/stake)
-
-#### **50M $SERAPH Cap to Start – Don't Miss Out!**

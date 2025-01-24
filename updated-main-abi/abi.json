@@ -222,19 +222,6 @@
   },
   {
     "type": "function",
-    "name": "removeRewardToken",
-    "inputs": [
-      {
-        "name": "_rewardToken",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],

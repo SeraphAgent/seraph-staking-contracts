@@ -163,15 +163,6 @@ Adds a new reward token.
 
 - `_rewardToken` (`address`): ERC-20 token.
 
-#### `removeRewardToken(address _rewardToken)`
-
-**Description:**
-Removes an existing reward token.
-
-**Inputs:**
-
-- `_rewardToken` (`address`): ERC-20 token.
-
 ---
 
 ### Managing Staking Cap

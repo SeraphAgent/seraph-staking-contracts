@@ -15,15 +15,15 @@ We highly value contributions to the Seraph project. To encourage and reward con
 
 The security of SeraphPool.sol is of utmost importance. We offer bounties for identifying and responsibly disclosing security vulnerabilities. The rewards for security vulnerabilities are based on the severity and potential impact of the vulnerability:
 
-- **Low Severity**: Up to $500
+- **Low Severity**: Up to $50
 
   - Examples: Minor security issues that do not pose an immediate threat.
 
-- **Medium Severity**: $500 - $2000
+- **Medium Severity**: $50 - $500
 
   - Examples: Vulnerabilities that could potentially be exploited but require specific conditions.
 
-- **High Severity**: $2000 - $5000
+- **High Severity**: $500 - $5000
 
   - Examples: Critical vulnerabilities that could lead to significant loss or compromise of funds.
 

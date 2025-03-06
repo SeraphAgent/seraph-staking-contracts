@@ -1,9 +1,7 @@
 # Bounties for Contributions and Vulnerabilities in SeraphPool.sol
 
-## How to Participate
+Secure *Seraph* with official security partner - [Remedy](https://r.xyz/#bug-bounty)
 
-To participate in the bounty program:
-
-Submit your contribution or vulnerability report via [our official bug bounty program on Remedy](https://hunt.r.xyz/programs/seraph-staking-by-bitmind).
+Submit your contribution or vulnerability report via [official bug bounty program](https://hunt.r.xyz/programs/seraph-staking-by-bitmind).
 
 Thank you for helping us improve **Seraph**!
